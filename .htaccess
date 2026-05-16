@@ -1,0 +1,13 @@
+# MSSHT Apache configuration
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteBase /mssht/
+
+    # Protect sensitive directories
+    RewriteRule ^(config|includes|database)/ - [F,L]
+</IfModule>
+
+# Disable directory listing
+Options -Indexes
+
+# Error display is controlled by APP_DEBUG in config/app.php

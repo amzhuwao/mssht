@@ -1,0 +1,164 @@
+Manica Skyview School of Hospitality and Tourism School Management System
+Features and Specifications for Short Courses, Professional Certificates, and Higher National Diploma Institutions
+TERTIARY INSTITUTION SCHOOL MANAGEMENT SYSTEM
+Features and Specifications for a Short Courses, Professional Certificates, and Higher National Diploma Institution
+1. SYSTEM OVERVIEW
+The system is a centralized web-based and mobile-enabled platform designed to manage academic operations, student lifecycle, finance and billing, course delivery, assessments and examinations, human resources, communication, reporting and analytics, and compliance requirements.
+2. USER ROLES AND ACCESS LEVELS
+•	- Super Administrator
+•	- Registrar / Academic Administrator
+•	- Finance Officer
+•	- Lecturer / Trainer
+•	- Student
+•	- HOD / Dean
+•	- Librarian
+•	- External Examiner / Accrediting Body
+3. CORE MODULES
+3.1 STUDENT ADMISSIONS MODULE
+Features:
+•	- Online applications
+•	- Document uploads
+•	- Application tracking
+•	- Automated admission workflow
+•	- Student ID generation
+•	- Multiple intake support
+3.2 COURSE AND PROGRAM MANAGEMENT MODULE
+Supports:
+•	- Short courses
+•	- Professional certificates
+•	- Diplomas
+•	- Higher National Diplomas
+Features:
+•	- Curriculum management
+•	- Modular registration
+•	- Credit accumulation
+•	- Repeat/carry module management
+3.3 STUDENT INFORMATION SYSTEM (SIS)
+Features:
+•	- Student profiles
+•	- Enrollment tracking
+•	- Academic history
+•	- Document repository
+3.4 TIMETABLING MODULE
+Features:
+•	- Automated timetable generation
+•	- Hybrid class scheduling
+•	- Resource allocation
+•	- Academic calendar management
+3.5 LEARNING MANAGEMENT SYSTEM (LMS)
+Features:
+•	- Learning material uploads
+•	- Online classes
+•	- Assignment submissions
+•	- Online quizzes
+•	- Discussion forums
+3.6 ATTENDANCE MANAGEMENT MODULE
+Features:
+•	- QR attendance
+•	- Biometric integration
+•	- Attendance analytics
+•	- Lecturer attendance tracking
+3.7 EXAMINATION AND ASSESSMENT MODULE
+Features:
+•	- Continuous assessments
+•	- Exam scheduling
+•	- Mark entry and moderation
+•	- GPA grading support
+•	- Transcript generation
+•	- Digital certificate generation
+3.8 FINANCE AND ACCOUNTING MODULE
+Features:
+•	- Tuition billing
+•	- Installment plans
+•	- Payment gateway integration
+•	- Receipts and invoices
+•	- Debtor management
+•	- Financial reporting
+3.9 HUMAN RESOURCES MODULE
+Features:
+•	- Staff records
+•	- Payroll integration
+•	- Lecturer workload management
+3.10 LIBRARY MANAGEMENT MODULE
+Features:
+•	- Book cataloging
+•	- Borrowing management
+•	- Digital library access
+3.11 INDUSTRIAL ATTACHMENT MODULE
+Features:
+•	- Placement tracking
+•	- Internship supervision
+•	- Logbook submissions
+•	- Employer evaluations
+3.12 COMMUNICATION MODULE
+Features:
+•	- SMS notifications
+•	- Email communication
+•	- Push notifications
+•	- Internal messaging
+3.13 REPORTING AND ANALYTICS MODULE
+Features:
+•	- Academic analytics
+•	- Financial analytics
+•	- Enrollment reports
+•	- Attendance reports
+•	- Export to PDF/Excel
+3.14 CERTIFICATION AND GRADUATION MODULE
+Features:
+•	- Graduation eligibility checking
+•	- Certificate generation
+•	- QR verification system
+4. NON-FUNCTIONAL REQUIREMENTS
+•	- High security
+•	- Role-based access control
+•	- Encryption
+•	- Scalability
+•	- Cloud compatibility
+•	- Automated backups
+•	- Mobile responsiveness
+5. TECHNICAL SPECIFICATIONS
+Frontend:
+•	- React / Vue.js / Angular
+Backend:
+•	- Laravel / Node.js / Django / ASP.NET Core
+Database:
+•	- PostgreSQL / MySQL / SQL Server
+Mobile:
+•	- Flutter / React Native
+6. THIRD-PARTY INTEGRATIONS
+•	- Moodle
+•	- Zoom
+•	- Microsoft Teams
+•	- Payment gateways
+•	- Biometric systems
+7. SPECIAL REQUIREMENTS
+Short Courses:
+•	- Flexible enrollment
+•	- Rapid certification
+•	- CPD tracking
+HND Programs:
+•	- Industrial attachment tracking
+•	- Thesis/project management
+•	- External moderation
+8. AI AND AUTOMATION FEATURES
+•	- AI chatbot
+•	- Predictive analytics
+•	- Smart scheduling
+•	- Automated mark analysis
+9. COMPLIANCE REQUIREMENTS
+•	- Ministry compliance
+•	- Accreditation standards
+•	- Data protection laws
+•	- Financial audit compliance
+10. DEPLOYMENT OPTIONS
+•	- Cloud deployment
+•	- On-premises deployment
+•	- Hybrid deployment
+11. KEY SUCCESS FACTORS
+•	- Flexibility
+•	- Security
+•	- Automation
+•	- Scalability
+•	- Ease of use
+•	- Mobile accessibility
+•	- Strong reporting
