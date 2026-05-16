@@ -6,8 +6,15 @@
 require_once __DIR__ . '/../config/app.php';
 require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/helpers.php';
+require_once __DIR__ . '/app-settings.php';
 require_once __DIR__ . '/auth.php';
 require_once __DIR__ . '/student-auth.php';
+require_once __DIR__ . '/classroom.php';
+require_once __DIR__ . '/mailer.php';
+require_once __DIR__ . '/rubric.php';
+require_once __DIR__ . '/guardian.php';
+require_once __DIR__ . '/pdf.php';
+require_once __DIR__ . '/finance.php';
 
 // Redirect students who must change their temporary password
 if (isLoggedIn()) {
@@ -28,7 +35,7 @@ if (session_status() === PHP_SESSION_NONE) {
 }
 
 // Ensure upload directories exist
-$uploadDirs = ['applications', 'students', 'lms', 'assignments', 'avatars'];
+$uploadDirs = ['applications', 'students', 'lms', 'assignments', 'avatars', 'classroom'];
 foreach ($uploadDirs as $dir) {
     $path = UPLOAD_PATH . '/' . $dir;
     if (!is_dir($path)) {

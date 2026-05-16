@@ -32,12 +32,12 @@ define('ROLES', [
 
 // Module access by role
 define('ROLE_MODULES', [
-    'super_admin' => ['dashboard', 'admissions', 'programs', 'students', 'timetable', 'lms', 'attendance', 'exams', 'finance', 'hr', 'library', 'placements', 'messages', 'reports', 'graduation', 'settings', 'users'],
-    'registrar'   => ['dashboard', 'admissions', 'programs', 'students', 'timetable', 'exams', 'reports', 'graduation', 'messages'],
+    'super_admin' => ['dashboard', 'admissions', 'programs', 'students', 'classes', 'timetable', 'lms', 'attendance', 'exams', 'finance', 'hr', 'library', 'placements', 'messages', 'reports', 'graduation', 'settings', 'users', 'notifications'],
+    'registrar'   => ['dashboard', 'admissions', 'programs', 'students', 'classes', 'timetable', 'exams', 'reports', 'graduation', 'messages'],
     'finance'     => ['dashboard', 'finance', 'students', 'reports', 'messages'],
-    'lecturer'    => ['dashboard', 'lms', 'attendance', 'exams', 'timetable', 'messages'],
-    'student'     => ['dashboard', 'lms', 'attendance', 'exams', 'finance', 'library', 'placements', 'messages'],
-    'hod'         => ['dashboard', 'programs', 'students', 'timetable', 'exams', 'reports', 'messages'],
+    'lecturer'    => ['dashboard', 'classes', 'lms', 'attendance', 'exams', 'timetable', 'messages'],
+    'student'     => ['dashboard', 'classes', 'lms', 'attendance', 'exams', 'finance', 'library', 'placements', 'messages', 'notifications'],
+    'hod'         => ['dashboard', 'programs', 'students', 'classes', 'timetable', 'exams', 'reports', 'messages'],
     'librarian'   => ['dashboard', 'library', 'messages'],
     'external_examiner' => ['dashboard', 'exams', 'messages'],
 ]);

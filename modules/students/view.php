@@ -27,6 +27,24 @@ $registrations = $db->prepare(
 $registrations->execute([$id]);
 $registrations = $registrations->fetchAll();
 
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && verifyCsrf($_POST['csrf'] ?? '')) {
+    if (($_POST['action'] ?? '') === 'add_guardian') {
+        saveGuardianForStudent($id, [
+            'first_name' => $_POST['first_name'],
+            'last_name'  => $_POST['last_name'],
+            'email'      => $_POST['email'],
+            'phone'      => $_POST['phone'] ?? '',
+            'relationship' => $_POST['relationship'] ?? 'parent',
+            'is_primary' => isset($_POST['is_primary']),
+            'receive_summaries' => isset($_POST['receive_summaries']),
+        ]);
+        flash('success', 'Guardian added.');
+        redirect(moduleUrl('students', 'view') . '?id=' . $id);
+    }
+}
+
+$guardians = getStudentGuardians($id);
+
 $pageTitle = 'Student: ' . $student['student_number'];
 $currentModule = 'students';
 
@@ -97,6 +115,48 @@ require_once __DIR__ . '/../../includes/header.php';
             </table>
             <?php endif; ?>
         </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h2>Guardians / Parents</h2>
+    </div>
+    <div class="card-body">
+        <?php if ($guardians): ?>
+        <table class="data-table" style="margin-bottom:1.5rem;">
+            <thead><tr><th>Name</th><th>Email</th><th>Relationship</th><th></th></tr></thead>
+            <tbody>
+            <?php foreach ($guardians as $g): ?>
+            <tr>
+                <td><?= e($g['first_name'] . ' ' . $g['last_name']) ?></td>
+                <td><?= e($g['email']) ?></td>
+                <td><?= e($g['relationship']) ?></td>
+                <td>
+                    <a href="<?= moduleUrl('guardians', 'send-summary') ?>?student_id=<?= $id ?>&guardian_id=<?= (int)$g['id'] ?>" class="btn btn-sm btn-outline">Send summary</a>
+                </td>
+            </tr>
+            <?php endforeach; ?>
+            </tbody>
+        </table>
+        <p><a href="<?= moduleUrl('guardians', 'send-summary') ?>?student_id=<?= $id ?>" class="btn btn-outline btn-sm">Email all guardians</a></p>
+        <?php else: ?>
+        <p class="text-muted">No guardians registered.</p>
+        <?php endif; ?>
+        <h3 style="font-size:1rem;margin:1rem 0;">Add guardian</h3>
+        <form method="post" class="form-row">
+            <input type="hidden" name="csrf" value="<?= csrfToken() ?>">
+            <input type="hidden" name="action" value="add_guardian">
+            <div class="form-group"><label>First name</label><input name="first_name" required></div>
+            <div class="form-group"><label>Last name</label><input name="last_name" required></div>
+            <div class="form-group"><label>Email</label><input type="email" name="email" required></div>
+            <div class="form-group"><label>Phone</label><input name="phone"></div>
+            <div class="form-group"><label>Relationship</label>
+                <select name="relationship"><option value="parent">Parent</option><option value="guardian">Guardian</option><option value="sponsor">Sponsor</option></select>
+            </div>
+            <div class="form-group"><label><input type="checkbox" name="receive_summaries" value="1" checked> Receive progress summaries</label></div>
+            <div class="form-group" style="align-self:flex-end;"><button type="submit" class="btn btn-primary">Add guardian</button></div>
+        </form>
     </div>
 </div>
 

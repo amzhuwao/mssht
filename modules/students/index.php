@@ -19,6 +19,7 @@ require_once __DIR__ . '/../../includes/header.php';
 
 <div class="page-actions">
     <h2 style="margin:0;">Students</h2>
+    <a href="<?= moduleUrl('guardians', 'bulk-send') ?>" class="btn btn-outline btn-sm">Bulk guardian summaries</a>
     <div class="search-box"><input type="text" id="tableSearch" placeholder="Search students..."></div>
 </div>
 

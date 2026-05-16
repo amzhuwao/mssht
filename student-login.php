@@ -20,7 +20,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             flash('success', 'Welcome to your student portal!');
             redirect(url('dashboard.php'));
         }
-        $error = 'Invalid student ID/email or password.';
+        $error = studentPortalLoginFailure() ?? 'Invalid student ID/email or password.';
     }
 }
 $w = 'div';
@@ -69,6 +69,7 @@ $w = 'div';
                 <a href="<?= url('login.php') ?>">Staff login</a>
             </p>
             <p class="auth-hint">Use your Student ID and password provided when your enrollment was approved.</p>
+            <p class="auth-footer" style="margin-top:.5rem;"><a href="<?= url('student-forgot-password.php') ?>">Forgot password?</a></p>
         </<?= $w ?>>
     </<?= $w ?>>
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>

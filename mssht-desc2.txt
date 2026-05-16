@@ -1,0 +1,539 @@
+Below is a complete systems-level description of the major modules, features, and functionality to be added.
+
+---
+
+# 1. CLASS MANAGEMENT MODULE
+
+## Purpose
+
+This module manages the creation and administration of virtual classrooms.
+
+---
+
+## Features
+
+### 1.1 Class Creation
+
+Teachers can:
+
+* Create unlimited classes
+* Assign class names
+* Add sections and subjects
+* Define room numbers
+* Customize themes and banners
+
+### Functionality
+
+* Automatically generates class codes
+* Creates dedicated Google Drive folders
+* Creates linked Google Calendar entries
+
+---
+
+### 1.2 Class Enrollment
+
+#### Methods
+
+* Join code
+* Email invitation
+* Domain-based enrollment
+* SIS integration 
+
+### Functionality
+
+Students can:
+
+* Self-enroll using codes
+* Accept invitations
+* Access all class resources immediately
+
+---
+
+### 1.3 Multiple Teacher Support
+
+Allows:
+
+* Primary teacher
+* Co-teachers
+* Teaching assistants
+
+### Permissions
+
+Co-teachers can:
+
+* Create assignments
+* Grade work
+* Post announcements
+* Manage discussions
+
+---
+
+### 1.4 Class Archiving
+
+At the end of a term:
+
+* Classes can be archived
+* Data remains accessible
+* Prevents accidental edits
+
+---
+
+# 2. STREAM MODULE (COMMUNICATION HUB)
+
+## Purpose
+
+Acts as the classroom communication center.
+
+---
+
+## Features
+
+### 2.1 Announcements
+
+Teachers can post:
+
+* Notices
+* Updates
+* Reminders
+* Learning materials
+
+### Functionality
+
+* Real-time notifications
+* Scheduled posting
+* Rich text formatting
+* Attachments support
+
+---
+
+### 2.2 Interactive Discussions
+
+Students can:
+
+* Comment
+* Reply
+* Ask questions
+
+### Controls
+
+Teachers can:
+
+* Mute students
+* Delete comments
+* Disable commenting
+
+---
+
+### 2.3 Multimedia Attachments
+
+Supports:
+
+* Documents
+* Videos
+* Links
+* YouTube content
+* PDFs
+* Google Drive files
+
+---
+
+### 2.4 Stream Moderation
+
+Teachers can:
+
+* Control posting permissions
+* Restrict student interaction
+* Moderate classroom communication
+
+---
+
+# 3. ASSIGNMENT MANAGEMENT MODULE
+
+## Purpose
+
+Handles assignment creation, distribution, submission, and grading.
+
+---
+
+# Features
+
+### 3.1 Assignment Creation
+
+Teachers can create:
+
+* Standard assignments
+* Practice exercises
+* Group projects
+* Homework
+
+### Assignment Components
+
+* Title
+* Instructions
+* Due dates
+* Topics/categories
+* Rubrics
+* Attachments
+
+---
+
+### 3.2 File Distribution Modes
+
+* Students can view file
+* Students can edit file
+* Make a copy for each student
+
+### Functionality
+
+Automatically duplicates documents for individual student work.
+
+---
+
+### 3.3 Assignment Scheduling
+
+Teachers can:
+
+* Schedule future assignments
+* Save drafts
+* Reuse posts
+* Queue content
+
+---
+
+### 3.4 Topic Organization
+
+Assignments can be grouped by:
+
+* Week
+* Subject
+* Module
+* Unit
+
+This improves navigation and content management.
+
+---
+
+### 3.5 Student Submission Workflow
+
+Students can:
+* Upload files
+* Attach Google Docs
+* Submit videos
+* Submit images
+* Add comments
+
+### Submission Types
+
+* Individual
+* Shared documents
+* External links
+
+---
+
+### 3.6 Late Submission Detection
+
+System automatically marks:
+
+* Submitted
+* Missing
+* Late
+
+
+---
+
+# 4. GRADING AND ASSESSMENT MODULE
+
+## Purpose
+
+Manages student assessment and academic performance.
+
+---
+
+## Features
+
+### 4.1 Gradebook
+
+Provides:
+
+* Centralized marks management
+* Assignment scores
+* Weighted grading
+* Export capabilities
+
+---
+
+### 4.2 Rubrics
+
+Teachers can:
+
+* Create detailed grading rubrics
+* Reuse rubrics
+* Attach performance criteria
+
+---
+
+### 4.3 Inline Grading
+
+Teachers can:
+
+* Annotate student submissions
+* Highlight text
+* Leave comments
+* Suggest corrections
+
+---
+
+### 4.4 Feedback System
+
+#### Types of Feedback
+
+* Private comments
+* General feedback
+* File annotations
+
+
+---
+
+### 4.5 Grade Export
+
+Grades can be exported to:
+
+* Google Sheets
+* CSV
+* Student Information Systems
+
+---
+
+### 4.6 Grade Visibility
+
+Students can:
+
+* View marks
+* View teacher comments
+* Track progress
+
+---
+
+
+
+### 7.1 Automatic Calendar Entries
+
+Creates:
+
+* Assignment deadlines
+* Class schedules
+
+
+
+
+---
+
+### 7.3 Reminder Notifications
+
+Students receive:
+
+* Due date alerts
+* Event reminders
+
+---
+
+# 8. PEOPLE MANAGEMENT MODULE
+
+## Purpose
+
+Manages users within classrooms.
+
+---
+
+## Features
+
+### 8.1 Student Management
+
+Teachers can:
+
+* Add/remove students
+* Email students
+* View participation
+
+---
+
+### 8.2 Teacher Management
+
+Supports:
+
+* Co-teachers
+* Administrative delegation
+
+---
+
+### 8.3 Guardian Summaries
+
+Parents/guardians can receive:
+
+* Missing work alerts
+* Upcoming assignments
+* Class activity summaries
+
+---
+
+# 11. SECURITY AND ADMINISTRATION MODULE
+
+## Purpose
+
+Ensures platform security and institutional management.
+
+---
+
+## Features
+
+### 11.1 User Authentication
+
+Supports:
+
+* Password Reset facility
+* Single Sign-On (SSO)
+* Multi-factor authentication
+
+---
+
+### 11.2 Role-Based Access Control
+
+Different permissions for:
+
+* Teachers
+* Students
+* Administrators
+
+---
+
+### 11.3 Data Protection
+
+Includes:
+
+* Encrypted communication
+* Privacy compliance
+
+---
+
+### 11.4 Audit and Monitoring
+
+Administrators can:
+
+* Monitor activity
+* Generate reports
+* Track usage statistics
+
+---
+
+# 12. ANALYTICS AND REPORTING MODULE
+
+## Purpose
+
+Provides performance insights and activity monitoring.
+
+---
+
+## Features
+
+### 12.1 Assignment Analytics
+
+Tracks:
+
+* Submission rates
+* Missing work
+* Completion rates
+
+---
+
+### 12.2 Student Engagement Metrics
+
+Measures:
+
+* Participation
+* Interaction frequency
+* Assignment completion
+
+---
+
+### 12.3 Teacher Activity Reports
+
+Tracks:
+
+* Grading frequency
+* Content posting
+* Classroom activity
+
+
+LMS and SIS Integration
+
+
+
+# 15. ACCESSIBILITY MODULE
+
+## Purpose
+
+Ensures inclusive learning.
+
+---
+
+## Features
+
+### 15.1 Accessibility Support
+
+Supports:
+
+* Screen readers
+* Keyboard navigation
+* High contrast modes
+
+---
+
+
+# 16. ADMIN CONSOLE
+
+## Purpose
+
+Institution-wide management.
+
+---
+
+## Features
+
+### 16.1 User Provisioning
+
+Admins can:
+
+* Create accounts
+* Suspend users
+* Reset passwords
+
+---
+
+### 16.2 Domain Management
+
+Controls:
+
+* Organizational units
+* Security policies
+* Access permissions
+
+---
+
+### 17.2 Automated Organization
+
+System automatically:
+
+* Sorts files
+* Organizes content
+* Links assignments
+
+---
+
+### 17.3 Search Intelligence
+
+Users can:
+
+* Search assignments
+* Search discussions
+* Search materials quickly
+

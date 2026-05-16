@@ -25,13 +25,24 @@ if ($studentId) {
     $results = $stmt->fetchAll();
 }
 
+$resultsBlocked = $studentId && studentHasFinanceHold($studentId, 'results');
+
 require_once __DIR__ . '/../../includes/header.php';
 ?>
 
+<?php if ($resultsBlocked): ?>
+<div class="alert alert-danger">Your results are withheld due to an outstanding fees hold. Please contact the finance office or settle your balance via <a href="<?= moduleUrl('finance') ?>">My Fees</a>.</div>
+<?php endif; ?>
+
+<div class="page-actions">
+    <a href="<?= moduleUrl('classes', 'grades-pdf') ?>" class="btn btn-outline btn-sm">Download class grades PDF</a>
+</div>
 <div class="card">
     <div class="card-header"><h2>My Assessment Results</h2></div>
     <div class="card-body table-wrap">
-        <?php if (empty($results)): ?>
+        <?php if ($resultsBlocked): ?>
+        <p class="empty-state">Results unavailable while financial hold is active.</p>
+        <?php elseif (empty($results)): ?>
         <p class="empty-state">No results published yet.</p>
         <?php else: ?>
         <table class="data-table">

@@ -5,6 +5,8 @@ $navItems = [
     'programs'   => ['label' => 'Programs & Courses', 'icon' => 'book', 'url' => moduleUrl('programs')],
     'students'   => ['label' => 'Students (SIS)', 'icon' => 'users', 'url' => moduleUrl('students')],
     'timetable'  => ['label' => 'Timetabling', 'icon' => 'calendar', 'url' => moduleUrl('timetable')],
+    'classes'    => ['label' => 'My Classes', 'icon' => 'monitor', 'url' => moduleUrl('classes')],
+    'notifications' => ['label' => 'Notifications', 'icon' => 'mail', 'url' => moduleUrl('notifications')],
     'lms'        => ['label' => 'Learning (LMS)', 'icon' => 'monitor', 'url' => moduleUrl('lms')],
     'attendance' => ['label' => 'Attendance', 'icon' => 'check', 'url' => moduleUrl('attendance')],
     'exams'      => ['label' => 'Exams & Assessment', 'icon' => 'file', 'url' => moduleUrl('exams')],

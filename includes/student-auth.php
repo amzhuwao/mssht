@@ -100,9 +100,15 @@ function createStudentPortalAccount(int $studentId, bool $resetPassword = false)
             $email = strtolower($student['student_number']) . '+' . $studentId . '@students.mssht.ac.zw';
         }
 
-        $db->prepare(
-            'INSERT INTO users (email, password_hash, role, status, must_change_password) VALUES (?, ?, ?, ?, 1)'
-        )->execute([$email, $hash, 'student', 'active']);
+        try {
+            $db->prepare(
+                'INSERT INTO users (email, password_hash, role, status, must_change_password) VALUES (?, ?, ?, ?, 1)'
+            )->execute([$email, $hash, 'student', 'active']);
+        } catch (PDOException $e) {
+            $db->prepare(
+                'INSERT INTO users (email, password_hash, role, status) VALUES (?, ?, ?, ?)'
+            )->execute([$email, $hash, 'student', 'active']);
+        }
         $userId = (int) $db->lastInsertId();
 
         $db->prepare(
@@ -122,30 +128,68 @@ function createStudentPortalAccount(int $studentId, bool $resetPassword = false)
     ];
 }
 
+function studentPortalLoginFailure(): ?string
+{
+    return $_SESSION['login_error_detail'] ?? null;
+}
+
 function studentPortalLogin(string $identifier, string $password): bool
 {
+    unset($_SESSION['login_error_detail']);
     $identifier = trim($identifier);
     if ($identifier === '' || $password === '') {
+        $_SESSION['login_error_detail'] = 'Please enter your Student ID (or email) and password.';
         return false;
     }
 
     $db = getDB();
-    $stmt = $db->prepare(
-        'SELECT u.*, p.first_name, p.last_name, p.avatar, s.id AS student_id, s.student_number, s.enrollment_status
-         FROM users u
-         JOIN students s ON s.user_id = u.id
-         JOIN user_profiles p ON p.user_id = u.id
-         WHERE u.role = ? AND u.status = ?
-           AND (u.email = ? OR s.student_number = ?)'
-    );
-    $stmt->execute(['student', 'active', $identifier, strtoupper($identifier)]);
-    $user = $stmt->fetch();
+    $studentNumberKey = strtoupper(str_replace([' ', '-'], '', $identifier));
 
-    if (!$user || !password_verify($password, $user['password_hash'])) {
+    // Lookup by student number (normalized, case-insensitive)
+    $stmt = $db->prepare(
+        'SELECT u.*, p.first_name, p.last_name, p.avatar, s.id AS student_id, s.student_number, s.enrollment_status, s.user_id
+         FROM students s
+         LEFT JOIN users u ON u.id = s.user_id
+         LEFT JOIN user_profiles p ON p.user_id = u.id
+         WHERE UPPER(REPLACE(REPLACE(s.student_number, \' \', \'\'), \'-\', \'\')) = ?'
+    );
+    $stmt->execute([$studentNumberKey]);
+    $row = $stmt->fetch();
+
+    if ($row && empty($row['user_id'])) {
+        $_SESSION['login_error_detail'] = 'Your student record exists but no portal login has been set up yet. Please contact the registrar to activate your portal account.';
+        return false;
+    }
+
+    $user = null;
+    if ($row && !empty($row['id']) && $row['role'] === 'student') {
+        $user = $row;
+    }
+
+    if (!$user) {
+        $stmt = $db->prepare(
+            'SELECT u.*, p.first_name, p.last_name, p.avatar, s.id AS student_id, s.student_number, s.enrollment_status
+             FROM users u
+             JOIN students s ON s.user_id = u.id
+             JOIN user_profiles p ON p.user_id = u.id
+             WHERE u.role = ? AND u.status = ? AND LOWER(u.email) = LOWER(?)'
+        );
+        $stmt->execute(['student', 'active', $identifier]);
+        $user = $stmt->fetch();
+    }
+
+    if (!$user) {
+        $_SESSION['login_error_detail'] = 'No portal account found for that Student ID or email.';
+        return false;
+    }
+
+    if (!password_verify($password, $user['password_hash'])) {
+        $_SESSION['login_error_detail'] = 'Incorrect password. If this is your first login, use the temporary password from enrollment (format: Mssht + last 4 digits of your Student ID, e.g. Mssht1699 for MSSHT2691699).';
         return false;
     }
 
     if (!in_array($user['enrollment_status'], ['active', 'deferred'], true)) {
+        $_SESSION['login_error_detail'] = 'Your enrollment is not active. Please contact the registrar.';
         return false;
     }
 

@@ -73,9 +73,9 @@ function formatDate(?string $date, string $format = 'd M Y'): string
     return date($format, strtotime($date));
 }
 
-function formatMoney(float $amount): string
+function formatMoney(float $amount, string $currency = 'USD'): string
 {
-    return 'USD ' . number_format($amount, 2);
+    return $currency . ' ' . number_format($amount, 2);
 }
 
 function programTypeLabel(string $type): string
