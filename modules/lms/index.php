@@ -31,6 +31,7 @@ require_once __DIR__ . '/../../includes/header.php';
 ?>
 
 <div class="dashboard-grid">
+    <?php if (currentRole() !== 'student'): ?>
     <div class="card">
         <div class="card-header"><h2>Upload Learning Material</h2></div>
         <div class="card-body">
@@ -52,6 +53,7 @@ require_once __DIR__ . '/../../includes/header.php';
             </form>
         </div>
     </div>
+    <?php endif; ?>
 </div>
 
 <div class="card">

@@ -68,7 +68,7 @@ $w = 'div';
                 &nbsp;&middot;&nbsp;
                 <a href="<?= url('login.php') ?>">Staff login</a>
             </p>
-            <p class="auth-hint">Use your Student ID and password provided when your enrollment was approved.</p>
+            <p class="auth-hint">Use your portal email and password. Approved students can also sign in with their Student ID.</p>
             <p class="auth-footer" style="margin-top:.5rem;"><a href="<?= url('student-forgot-password.php') ?>">Forgot password?</a></p>
         </<?= $w ?>>
     </<?= $w ?>>

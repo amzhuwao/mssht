@@ -8,6 +8,11 @@ function getCurrentStudentId(): ?int
     return isset($_SESSION['student_id']) ? (int) $_SESSION['student_id'] : null;
 }
 
+function getCurrentApplicantId(): ?int
+{
+    return isset($_SESSION['application_id']) ? (int) $_SESSION['application_id'] : null;
+}
+
 function getCurrentStudent(): ?array
 {
     static $student = null;
@@ -33,6 +38,52 @@ function getCurrentStudent(): ?array
     return $student;
 }
 
+function getCurrentApplicant(): ?array
+{
+    static $applicant = null;
+    if ($applicant !== null) {
+        return $applicant;
+    }
+
+    $applicationId = getCurrentApplicantId();
+    $db = getDB();
+
+    if (!$applicationId) {
+        $stmt = $db->prepare(
+            'SELECT a.*, p.name AS program_name, p.program_type, i.name AS intake_name, u.email AS portal_email,
+                    (SELECT COUNT(*) FROM application_documents ad WHERE ad.application_id = a.id) AS documents_count
+             FROM applications a
+             JOIN programs p ON p.id = a.program_id
+             JOIN intakes i ON i.id = a.intake_id
+             LEFT JOIN users u ON u.id = a.user_id
+             WHERE a.user_id = ?
+             ORDER BY a.created_at DESC
+             LIMIT 1'
+        );
+        $stmt->execute([$_SESSION['user_id'] ?? 0]);
+    } else {
+        $stmt = $db->prepare(
+            'SELECT a.*, p.name AS program_name, p.program_type, i.name AS intake_name, u.email AS portal_email,
+                    (SELECT COUNT(*) FROM application_documents ad WHERE ad.application_id = a.id) AS documents_count
+             FROM applications a
+             JOIN programs p ON p.id = a.program_id
+             JOIN intakes i ON i.id = a.intake_id
+             LEFT JOIN users u ON u.id = a.user_id
+             WHERE a.id = ?'
+        );
+        $stmt->execute([$applicationId]);
+    }
+
+    $applicant = $stmt->fetch() ?: null;
+    return $applicant;
+}
+
+function studentPortalHasApprovedAccess(): bool
+{
+    $student = getCurrentStudent();
+    return $student && in_array($student['enrollment_status'], ['active', 'deferred'], true);
+}
+
 function isStudentPortal(): bool
 {
     return currentRole() === 'student';
@@ -54,6 +105,74 @@ function generateStudentTempPassword(string $studentNumber): string
     return 'Mssht' . $suffix;
 }
 
+function generateApplicantTempPassword(): string
+{
+    return 'Appl' . strtoupper(bin2hex(random_bytes(4)));
+}
+
+/**
+ * Create a portal login for a new applicant record.
+ * @return array{email:string,temp_password:string,application_ref:string,is_new:bool}|null
+ */
+function createApplicantPortalAccount(int $applicationId): ?array
+{
+    $db = getDB();
+    $stmt = $db->prepare(
+        'SELECT a.*, u.id AS user_id, u.email AS portal_email
+         FROM applications a
+         LEFT JOIN users u ON u.id = a.user_id
+         WHERE a.id = ?'
+    );
+    $stmt->execute([$applicationId]);
+    $application = $stmt->fetch();
+    if (!$application) {
+        return null;
+    }
+
+    $email = trim($application['email'] ?? '');
+    if ($email === '') {
+        $email = strtolower($application['application_ref']) . '@applicants.mssht.ac.zw';
+    }
+
+    $tempPassword = generateApplicantTempPassword();
+    $hash = password_hash($tempPassword, PASSWORD_DEFAULT);
+    $firstName = trim($application['first_name'] ?? 'Applicant');
+    $lastName = trim($application['last_name'] ?? '');
+    $phone = trim($application['phone'] ?? '');
+    $isNew = empty($application['user_id']);
+
+    if ($application['user_id']) {
+        $userId = (int) $application['user_id'];
+        $db->prepare('UPDATE users SET email = ?, password_hash = ?, role = ?, status = ?, must_change_password = 1 WHERE id = ?')
+           ->execute([$email, $hash, 'student', 'active', $userId]);
+        $db->prepare('UPDATE user_profiles SET first_name = ?, last_name = ?, phone = ? WHERE user_id = ?')
+           ->execute([$firstName, $lastName, $phone, $userId]);
+    } else {
+        $check = $db->prepare('SELECT id FROM users WHERE email = ?');
+        $check->execute([$email]);
+        if ($check->fetch()) {
+            $email = strtolower($application['application_ref']) . '+' . $applicationId . '@applicants.mssht.ac.zw';
+        }
+
+        $db->prepare(
+            'INSERT INTO users (email, password_hash, role, status, must_change_password) VALUES (?, ?, ?, ?, 1)'
+        )->execute([$email, $hash, 'student', 'active']);
+        $userId = (int) $db->lastInsertId();
+        $db->prepare('INSERT INTO user_profiles (user_id, first_name, last_name, phone) VALUES (?, ?, ?, ?)')
+           ->execute([$userId, $firstName, $lastName, $phone]);
+        $db->prepare('UPDATE applications SET user_id = ? WHERE id = ?')->execute([$userId, $applicationId]);
+    }
+
+    auditLog('applicant_portal_created', 'application', $applicationId);
+
+    return [
+        'email' => $email,
+        'temp_password' => $tempPassword,
+        'application_ref' => $application['application_ref'],
+        'is_new' => $isNew,
+    ];
+}
+
 /**
  * Create or reset portal login for a student record.
  * @return array{email:string,temp_password:string,student_number:string,is_new:bool}|null
@@ -62,7 +181,7 @@ function createStudentPortalAccount(int $studentId, bool $resetPassword = false)
 {
     $db = getDB();
     $stmt = $db->prepare(
-        'SELECT s.*, a.first_name, a.last_name, a.email, a.phone
+        'SELECT s.*, a.first_name, a.last_name, a.email, a.phone, a.user_id AS application_user_id
          FROM students s
          LEFT JOIN applications a ON a.id = s.application_id
          WHERE s.id = ?'
@@ -83,16 +202,19 @@ function createStudentPortalAccount(int $studentId, bool $resetPassword = false)
     $phone = $student['phone'] ?? null;
     $tempPassword = generateStudentTempPassword($student['student_number']);
     $hash = password_hash($tempPassword, PASSWORD_DEFAULT);
-    $isNew = empty($student['user_id']);
+    $isNew = empty($student['user_id']) && empty($student['application_user_id']);
 
-    if ($student['user_id']) {
-        $userId = (int) $student['user_id'];
+    $userId = (int) ($student['user_id'] ?: $student['application_user_id'] ?: 0);
+    if ($userId) {
         if ($resetPassword) {
             $db->prepare('UPDATE users SET password_hash = ?, must_change_password = 1, status = ? WHERE id = ?')
                ->execute([$hash, 'active', $userId]);
         }
         $db->prepare('UPDATE user_profiles SET first_name = ?, last_name = ?, phone = ? WHERE user_id = ?')
            ->execute([$firstName, $lastName, $phone, $userId]);
+        if (empty($student['user_id'])) {
+            $db->prepare('UPDATE students SET user_id = ? WHERE id = ?')->execute([$userId, $studentId]);
+        }
     } else {
         $check = $db->prepare('SELECT id FROM users WHERE email = ?');
         $check->execute([$email]);
@@ -170,8 +292,8 @@ function studentPortalLogin(string $identifier, string $password): bool
         $stmt = $db->prepare(
             'SELECT u.*, p.first_name, p.last_name, p.avatar, s.id AS student_id, s.student_number, s.enrollment_status
              FROM users u
-             JOIN students s ON s.user_id = u.id
-             JOIN user_profiles p ON p.user_id = u.id
+             LEFT JOIN students s ON s.user_id = u.id
+             LEFT JOIN user_profiles p ON p.user_id = u.id
              WHERE u.role = ? AND u.status = ? AND LOWER(u.email) = LOWER(?)'
         );
         $stmt->execute(['student', 'active', $identifier]);
@@ -184,11 +306,11 @@ function studentPortalLogin(string $identifier, string $password): bool
     }
 
     if (!password_verify($password, $user['password_hash'])) {
-        $_SESSION['login_error_detail'] = 'Incorrect password. If this is your first login, use the temporary password from enrollment (format: Mssht + last 4 digits of your Student ID, e.g. Mssht1699 for MSSHT2691699).';
+        $_SESSION['login_error_detail'] = 'Incorrect password. If this is your first login, use the temporary password provided when your portal account was created.';
         return false;
     }
 
-    if (!in_array($user['enrollment_status'], ['active', 'deferred'], true)) {
+    if (!empty($user['student_id']) && !in_array($user['enrollment_status'], ['active', 'deferred'], true)) {
         $_SESSION['login_error_detail'] = 'Your enrollment is not active. Please contact the registrar.';
         return false;
     }
@@ -198,10 +320,21 @@ function studentPortalLogin(string $identifier, string $password): bool
     unset($user['password_hash']);
     $_SESSION['user_id'] = $user['id'];
     $_SESSION['user'] = $user;
-    $_SESSION['student_id'] = (int) $user['student_id'];
+    if (!empty($user['student_id'])) {
+        $_SESSION['student_id'] = (int) $user['student_id'];
+        unset($_SESSION['application_id']);
+    } else {
+        $app = $db->prepare('SELECT id FROM applications WHERE user_id = ? ORDER BY created_at DESC LIMIT 1');
+        $app->execute([(int) $user['id']]);
+        $applicationId = (int) $app->fetchColumn();
+        if ($applicationId) {
+            $_SESSION['application_id'] = $applicationId;
+            unset($_SESSION['student_id']);
+        }
+    }
     $_SESSION['login_portal'] = 'student';
 
-    auditLog('student_portal_login', 'student', (int) $user['student_id']);
+    auditLog('student_portal_login', !empty($user['student_id']) ? 'student' : 'application', !empty($user['student_id']) ? (int) $user['student_id'] : ($applicationId ?? null));
     return true;
 }
 
@@ -225,6 +358,14 @@ function loadSessionUser(int $userId): void
             $sid = $s->fetchColumn();
             if ($sid) {
                 $_SESSION['student_id'] = (int) $sid;
+                unset($_SESSION['application_id']);
+            } else {
+                $a = $db->prepare('SELECT id FROM applications WHERE user_id = ? ORDER BY created_at DESC LIMIT 1');
+                $a->execute([$userId]);
+                $aid = $a->fetchColumn();
+                if ($aid) {
+                    $_SESSION['application_id'] = (int) $aid;
+                }
             }
         }
     }

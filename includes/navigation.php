@@ -21,7 +21,7 @@ $navItems = [
     'settings'   => ['label' => 'System Settings', 'icon' => 'cog', 'url' => moduleUrl('settings')],
 ];
 
-$allowed = ROLE_MODULES[currentRole()] ?? [];
+$allowed = getAccessibleModules();
 $currentModule = $currentModule ?? '';
 ?>
 <ul class="nav-list">

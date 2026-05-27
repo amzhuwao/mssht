@@ -22,6 +22,16 @@ CREATE TABLE users (
     INDEX idx_status (status)
 ) ENGINE=InnoDB;
 
+CREATE TABLE user_module_permissions (
+    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    user_id INT UNSIGNED NOT NULL,
+    module_name VARCHAR(80) NOT NULL,
+    access ENUM('allow', 'deny') NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY uk_user_module (user_id, module_name),
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
 CREATE TABLE user_profiles (
     id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     user_id INT UNSIGNED NOT NULL UNIQUE,
@@ -75,6 +85,7 @@ CREATE TABLE modules (
 CREATE TABLE applications (
     id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     application_ref VARCHAR(30) NOT NULL UNIQUE,
+    user_id INT UNSIGNED NULL UNIQUE,
     program_id INT UNSIGNED NOT NULL,
     intake_id INT UNSIGNED NOT NULL,
     first_name VARCHAR(80) NOT NULL,
@@ -90,6 +101,7 @@ CREATE TABLE applications (
     reviewed_by INT UNSIGNED NULL,
     reviewed_at DATETIME NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL,
     FOREIGN KEY (program_id) REFERENCES programs(id),
     FOREIGN KEY (intake_id) REFERENCES intakes(id),
     FOREIGN KEY (reviewed_by) REFERENCES users(id) ON DELETE SET NULL

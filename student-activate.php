@@ -13,6 +13,7 @@ if (!mustChangePassword()) {
 
 $error = '';
 $student = getCurrentStudent();
+$applicant = $student ? null : getCurrentApplicant();
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!verifyCsrf($_POST['csrf'] ?? '')) {
@@ -53,7 +54,11 @@ $w = 'div';
             <<?= $w ?> class="auth-brand">
                 <span class="brand-icon lg">M</span>
                 <h1>Set Your Password</h1>
+                <?php if ($student): ?>
                 <p>Student ID: <strong><?= e($student['student_number'] ?? '') ?></strong></p>
+                <?php elseif ($applicant): ?>
+                <p>Application Ref: <strong><?= e($applicant['application_ref'] ?? '') ?></strong></p>
+                <?php endif; ?>
             </<?= $w ?>>
             <?php if ($error): ?>
             <<?= $w ?> class="alert alert-danger"><?= e($error) ?></<?= $w ?>>

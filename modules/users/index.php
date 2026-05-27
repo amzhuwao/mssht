@@ -8,7 +8,7 @@ $db = getDB();
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && verifyCsrf($_POST['csrf'] ?? '')) {
     $hash = password_hash($_POST['password'], PASSWORD_DEFAULT);
-    $db->prepare('INSERT INTO users (email, password_hash, role, status) VALUES (?, ?, ?, ?)')
+    $db->prepare('INSERT INTO users (email, password_hash, role, status, must_change_password) VALUES (?, ?, ?, ?, 1)')
        ->execute([trim($_POST['email']), $hash, $_POST['role'], 'active']);
     $uid = (int)$db->lastInsertId();
     $db->prepare('INSERT INTO user_profiles (user_id, first_name, last_name, phone) VALUES (?, ?, ?, ?)')
@@ -58,7 +58,7 @@ require_once __DIR__ . '/../../includes/header.php';
     <div class="card-header"><h2>All Users</h2></div>
     <div class="card-body table-wrap">
         <table class="data-table">
-            <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Status</th><th>Last Login</th></tr></thead>
+            <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Status</th><th>Last Login</th><th>Actions</th></tr></thead>
             <tbody>
             <?php foreach ($users as $u): ?>
             <tr>
@@ -67,6 +67,7 @@ require_once __DIR__ . '/../../includes/header.php';
                 <td><?= e(ROLES[$u['role']] ?? $u['role']) ?></td>
                 <td><?= statusBadge($u['status']) ?></td>
                 <td><?= $u['last_login'] ? formatDate($u['last_login'], 'd M Y H:i') : 'Never' ?></td>
+                <td><a href="edit.php?id=<?= (int)$u['id'] ?>" class="btn btn-sm btn-outline">Edit</a></td>
             </tr>
             <?php endforeach; ?>
             </tbody>

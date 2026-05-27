@@ -42,4 +42,6 @@ define('ROLE_MODULES', [
     'external_examiner' => ['dashboard', 'exams', 'messages'],
 ]);
 
+define('MODULE_CATALOG', array_values(array_unique(array_merge(...array_values(ROLE_MODULES)))));
+
 require_once __DIR__ . '/../includes/debug.php';
