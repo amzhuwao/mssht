@@ -81,7 +81,14 @@ require_once __DIR__ . '/../../includes/header.php';
 </div>
 
 <script>
-$('#showAddProgram').on('click', function() { $('#addProgramForm').slideToggle(); });
+var showAddProgram = document.getElementById('showAddProgram');
+var addProgramForm = document.getElementById('addProgramForm');
+
+if (showAddProgram && addProgramForm) {
+    showAddProgram.addEventListener('click', function () {
+        addProgramForm.style.display = addProgramForm.style.display === 'none' || !addProgramForm.style.display ? 'block' : 'none';
+    });
+}
 </script>
 
 <?php require_once __DIR__ . '/../../includes/footer.php'; ?>

@@ -76,16 +76,31 @@ $criteria = $rubric['criteria'] ?? [['criterion' => '', 'max_points' => 10]];
 </div>
 
 <script>
-$('#addCriterion').on('click', function() {
-    $('#rubricTable tbody').append(
-        '<tr><td><input type="text" name="criterion[]" required style="width:100%;"></td>' +
-        '<td><input type="number" step="0.01" name="max_points[]" value="10" min="0" style="width:90px;"></td>' +
-        '<td><button type="button" class="btn btn-sm btn-outline remove-row">Remove</button></td></tr>'
-    );
-});
-$(document).on('click', '.remove-row', function() {
-    if ($('#rubricTable tbody tr').length > 1) $(this).closest('tr').remove();
-});
+var addCriterionButton = document.getElementById('addCriterion');
+var rubricTableBody = document.querySelector('#rubricTable tbody');
+
+if (addCriterionButton && rubricTableBody) {
+    addCriterionButton.addEventListener('click', function () {
+        rubricTableBody.insertAdjacentHTML(
+            'beforeend',
+            '<tr><td><input type="text" name="criterion[]" required style="width:100%;"></td>' +
+            '<td><input type="number" step="0.01" name="max_points[]" value="10" min="0" style="width:90px;"></td>' +
+            '<td><button type="button" class="btn btn-sm btn-outline remove-row">Remove</button></td></tr>'
+        );
+    });
+
+    rubricTableBody.addEventListener('click', function (event) {
+        var removeButton = event.target.closest('.remove-row');
+
+        if (!removeButton) {
+            return;
+        }
+
+        if (rubricTableBody.querySelectorAll('tr').length > 1) {
+            removeButton.closest('tr').remove();
+        }
+    });
+}
 </script>
 
 <?php require_once __DIR__ . '/../../includes/footer.php'; ?>
