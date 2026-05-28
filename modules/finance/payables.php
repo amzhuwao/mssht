@@ -63,8 +63,10 @@ require __DIR__ . '/../../includes/finance-nav.php';
     <div class="card"><div class="card-header"><h2>Record bill</h2></div>
     <div class="card-body"><form method="post">
         <input type="hidden" name="csrf" value="<?= csrfToken() ?>"><input type="hidden" name="action" value="add_bill">
-        <div class="form-group"><label>Supplier</label><select name="supplier_id" required><?php foreach ($suppliers as $s): ?><option value="<?= $s['id'] ?>"><?= e($s['name']) ?></option><?php endforeach; ?></select></div>
-        <div class="form-group"><label>Category</label><select name="category_id"><option value="">—</option><?php foreach ($categories as $c): ?><option value="<?= $c['id'] ?>"><?= e($c['name']) ?></option><?php endforeach; ?></select></div>
+        <div class="form-group"><label>Search supplier</label><input type="text" id="supplierSearch" placeholder="Search suppliers..."></div>
+        <div class="form-group"><label>Supplier</label><select name="supplier_id" id="supplierSelect" required><option value="">Select supplier</option><?php foreach ($suppliers as $s): ?><option value="<?= (int) $s['id'] ?>"><?= e($s['name']) ?></option><?php endforeach; ?></select></div>
+        <div class="form-group"><label>Search category</label><input type="text" id="categorySearch" placeholder="Search categories..."></div>
+        <div class="form-group"><label>Category</label><select name="category_id" id="categorySelect"><option value="">—</option><?php foreach ($categories as $c): ?><option value="<?= (int) $c['id'] ?>"><?= e($c['name']) ?></option><?php endforeach; ?></select></div>
         <div class="form-group"><label>Description</label><input name="description" required></div>
         <div class="form-row">
             <div class="form-group"><label>Amount</label><input type="number" step="0.01" name="amount" required></div>
@@ -93,5 +95,10 @@ require __DIR__ . '/../../includes/finance-nav.php';
 </tr>
 <?php endforeach; ?>
 </tbody></table></div></div>
+
+<script>
+msshtSearchableSelect('supplierSearch', 'supplierSelect');
+msshtSearchableSelect('categorySearch', 'categorySelect');
+</script>
 
 <?php require_once __DIR__ . '/../../includes/footer.php'; ?>

@@ -46,8 +46,10 @@ require __DIR__ . '/../../includes/finance-nav.php';
         <input type="hidden" name="csrf" value="<?= csrfToken() ?>"><input type="hidden" name="action" value="journal">
         <div class="form-group"><label>Description</label><input name="description" required></div>
         <div class="form-row">
-            <div class="form-group"><label>Debit account</label><select name="debit_account" required><?php foreach ($accounts as $a): ?><option value="<?= $a['id'] ?>"><?= e($a['code'] . ' ' . $a['name']) ?></option><?php endforeach; ?></select></div>
-            <div class="form-group"><label>Credit account</label><select name="credit_account" required><?php foreach ($accounts as $a): ?><option value="<?= $a['id'] ?>"><?= e($a['code'] . ' ' . $a['name']) ?></option><?php endforeach; ?></select></div>
+            <div class="form-group"><label>Search debit account</label><input type="text" id="debitAccountSearch" placeholder="Search debit account"></div>
+            <div class="form-group"><label>Search credit account</label><input type="text" id="creditAccountSearch" placeholder="Search credit account"></div>
+            <div class="form-group"><label>Debit account</label><select name="debit_account" id="debitAccountSelect" required><option value="">Select account</option><?php foreach ($accounts as $a): ?><option value="<?= (int) $a['id'] ?>"><?= e($a['code'] . ' ' . $a['name']) ?></option><?php endforeach; ?></select></div>
+            <div class="form-group"><label>Credit account</label><select name="credit_account" id="creditAccountSelect" required><option value="">Select account</option><?php foreach ($accounts as $a): ?><option value="<?= (int) $a['id'] ?>"><?= e($a['code'] . ' ' . $a['name']) ?></option><?php endforeach; ?></select></div>
             <div class="form-group"><label>Amount</label><input type="number" step="0.01" name="amount" required></div>
         </div>
         <button type="submit" class="btn btn-primary">Post entry</button>
@@ -78,5 +80,10 @@ require __DIR__ . '/../../includes/finance-nav.php';
 <tr><td><?= e($j['entry_number']) ?></td><td><?= formatDate($j['entry_date']) ?></td><td><?= e($j['description']) ?></td><td><?= e($j['source_type'] ?? 'manual') ?></td></tr>
 <?php endforeach; ?>
 </tbody></table></div></div>
+
+<script>
+msshtSearchableSelect('debitAccountSearch', 'debitAccountSelect');
+msshtSearchableSelect('creditAccountSearch', 'creditAccountSelect');
+</script>
 
 <?php require_once __DIR__ . '/../../includes/footer.php'; ?>

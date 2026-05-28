@@ -39,7 +39,8 @@ require_once __DIR__ . '/../../includes/header.php';
         <form method="get" class="form-row" style="margin-bottom:1.5rem;">
             <div class="form-group">
                 <label>Intake</label>
-                <select name="intake_id" required onchange="this.form.submit()">
+                <input type="text" id="guardianIntakeSearch" placeholder="Search intake names">
+                <select name="intake_id" id="guardianIntakeSelect" required onchange="this.form.submit()">
                     <option value="">Select intake</option>
                     <?php foreach ($intakes as $i): ?>
                     <option value="<?= (int)$i['id'] ?>" <?= $intakeId === (int)$i['id'] ? 'selected' : '' ?>><?= e($i['name']) ?> (<?= e($i['status']) ?>)</option>
@@ -48,7 +49,8 @@ require_once __DIR__ . '/../../includes/header.php';
             </div>
             <div class="form-group">
                 <label>Program (optional)</label>
-                <select name="program_id" onchange="this.form.submit()">
+                <input type="text" id="guardianProgramSearch" placeholder="Search programs">
+                <select name="program_id" id="guardianProgramSelect" onchange="this.form.submit()">
                     <option value="">All programs</option>
                     <?php foreach ($programs as $p): ?>
                     <option value="<?= (int)$p['id'] ?>" <?= $programId === (int)$p['id'] ? 'selected' : '' ?>><?= e($p['name']) ?></option>
@@ -78,5 +80,10 @@ require_once __DIR__ . '/../../includes/header.php';
         <?php endif; ?>
     </div>
 </div>
+
+<script>
+msshtSearchableSelect('guardianIntakeSearch', 'guardianIntakeSelect');
+msshtSearchableSelect('guardianProgramSearch', 'guardianProgramSelect');
+</script>
 
 <?php require_once __DIR__ . '/../../includes/footer.php'; ?>

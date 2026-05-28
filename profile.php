@@ -36,7 +36,7 @@ require_once __DIR__ . '/includes/header.php';
             </div>
             <div class="form-group"><label>Email</label><input value="<?= e($user['email']) ?>" disabled></div>
             <div class="form-group"><label>Phone</label><input name="phone" value="<?= e($user['phone'] ?? '') ?>"></div>
-            <div class="form-group"><label>Role</label><input value="<?= e(ROLES[$user['role']] ?? '') ?>" disabled></div>
+            <div class="form-group"><label>Role</label><input value="<?= e(roleLabel($user['role'] ?? null)) ?>" disabled></div>
             <hr style="margin:1.5rem 0;border-color:var(--color-border);">
             <div class="form-group"><label>New Password (leave blank to keep)</label><input type="password" name="new_password" minlength="8"></div>
             <button type="submit" class="btn btn-primary">Save Changes</button>

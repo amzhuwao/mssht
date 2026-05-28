@@ -43,7 +43,15 @@ $pendingPops = $db->query(
      JOIN invoices i ON i.id = p.invoice_id JOIN students s ON s.id = i.student_id
      WHERE p.status = 'pending' ORDER BY p.paid_at DESC"
 )->fetchAll();
-$students = $db->query("SELECT id, student_number FROM students WHERE enrollment_status = 'active'")->fetchAll();
+$students = $db->query(
+    "SELECT s.id, s.student_number, COALESCE(a.first_name, up.first_name) AS first_name, COALESCE(a.last_name, up.last_name) AS last_name
+     FROM students s
+     LEFT JOIN applications a ON a.id = s.application_id
+     LEFT JOIN users u ON u.id = s.user_id
+     LEFT JOIN user_profiles up ON up.user_id = u.id
+     WHERE s.enrollment_status = 'active'
+     ORDER BY s.student_number"
+)->fetchAll();
 
 require_once __DIR__ . '/../../includes/header.php';
 require __DIR__ . '/../../includes/finance-nav.php';
@@ -90,7 +98,8 @@ require __DIR__ . '/../../includes/finance-nav.php';
     <div class="card"><div class="card-header"><h2>Place financial hold</h2></div>
     <div class="card-body"><form method="post">
         <input type="hidden" name="csrf" value="<?= csrfToken() ?>"><input type="hidden" name="action" value="add_hold">
-        <div class="form-group"><label>Student</label><select name="student_id" required><?php foreach ($students as $s): ?><option value="<?= $s['id'] ?>"><?= e($s['student_number']) ?></option><?php endforeach; ?></select></div>
+        <div class="form-group"><label>Search student</label><input type="text" id="holdStudentSearch" placeholder="Search by student number, name, or surname"></div>
+        <div class="form-group"><label>Student</label><select name="student_id" id="holdStudentSelect" required><option value="">Select</option><?php foreach ($students as $s): ?><option value="<?= (int) $s['id'] ?>"><?= e(trim($s['student_number'] . ' — ' . trim(($s['first_name'] ?? '') . ' ' . ($s['last_name'] ?? '')))) ?></option><?php endforeach; ?></select></div>
         <div class="form-group"><label>Hold type</label><select name="hold_type"><option value="exams">Exams</option><option value="registration">Registration</option><option value="results">Results</option><option value="graduation">Graduation</option><option value="general">General</option></select></div>
         <div class="form-group"><label>Reason</label><input name="reason" required></div>
         <button type="submit" class="btn btn-primary">Place hold</button>
@@ -104,5 +113,43 @@ require __DIR__ . '/../../includes/finance-nav.php';
 <td><form method="post"><input type="hidden" name="csrf" value="<?= csrfToken() ?>"><input type="hidden" name="action" value="lift_hold"><input type="hidden" name="hold_id" value="<?= (int)$h['id'] ?>"><button class="btn btn-sm btn-outline">Lift</button></form></td></tr>
 <?php endforeach; ?>
 </tbody></table></div></div>
+
+<script>
+(function () {
+    const search = document.getElementById('holdStudentSearch');
+    const select = document.getElementById('holdStudentSelect');
+    if (!search || !select) return;
+
+    const allOptions = Array.from(select.options).map(function (option) {
+        return { value: option.value, text: option.textContent };
+    });
+
+    search.addEventListener('input', function () {
+        const q = this.value.toLowerCase().trim();
+        const currentValue = select.value;
+
+        select.innerHTML = '';
+        allOptions.forEach(function (option, index) {
+            if (index === 0) {
+                const placeholder = document.createElement('option');
+                placeholder.value = option.value;
+                placeholder.textContent = option.text;
+                select.appendChild(placeholder);
+                return;
+            }
+            if (!q || option.text.toLowerCase().indexOf(q) > -1) {
+                const opt = document.createElement('option');
+                opt.value = option.value;
+                opt.textContent = option.text;
+                select.appendChild(opt);
+            }
+        });
+
+        if (currentValue) {
+            select.value = currentValue;
+        }
+    });
+})();
+</script>
 
 <?php require_once __DIR__ . '/../../includes/footer.php'; ?>

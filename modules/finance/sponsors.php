@@ -46,7 +46,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && verifyCsrf($_POST['csrf'] ?? '')) {
 }
 
 $sponsors = $db->query('SELECT * FROM finance_sponsors ORDER BY name')->fetchAll();
-$students = $db->query("SELECT id, student_number FROM students WHERE enrollment_status = 'active'")->fetchAll();
+$students = $db->query(
+    "SELECT s.id, s.student_number, COALESCE(a.first_name, up.first_name) AS first_name, COALESCE(a.last_name, up.last_name) AS last_name
+     FROM students s
+     LEFT JOIN applications a ON a.id = s.application_id
+     LEFT JOIN users u ON u.id = s.user_id
+     LEFT JOIN user_profiles up ON up.user_id = u.id
+     WHERE s.enrollment_status = 'active'
+     ORDER BY s.student_number"
+)->fetchAll();
 
 require_once __DIR__ . '/../../includes/header.php';
 require __DIR__ . '/../../includes/finance-nav.php';
@@ -68,8 +76,10 @@ require __DIR__ . '/../../includes/finance-nav.php';
     <div class="card"><div class="card-header"><h2>Link student to sponsor</h2></div>
     <div class="card-body"><form method="post">
         <input type="hidden" name="csrf" value="<?= csrfToken() ?>"><input type="hidden" name="action" value="link_student">
-        <div class="form-group"><label>Sponsor</label><select name="sponsor_id" required><?php foreach ($sponsors as $sp): ?><option value="<?= $sp['id'] ?>"><?= e($sp['name']) ?></option><?php endforeach; ?></select></div>
-        <div class="form-group"><label>Student</label><select name="student_id" required><?php foreach ($students as $s): ?><option value="<?= $s['id'] ?>"><?= e($s['student_number']) ?></option><?php endforeach; ?></select></div>
+        <div class="form-group"><label>Search sponsor</label><input type="text" id="sponsorSearch" placeholder="Search sponsors"></div>
+        <div class="form-group"><label>Sponsor</label><select name="sponsor_id" id="sponsorSelect" required><option value="">Select sponsor</option><?php foreach ($sponsors as $sp): ?><option value="<?= (int) $sp['id'] ?>"><?= e($sp['name']) ?></option><?php endforeach; ?></select></div>
+        <div class="form-group"><label>Search student</label><input type="text" id="sponsorStudentSearch" placeholder="Search by student number, name, or surname"></div>
+        <div class="form-group"><label>Student</label><select name="student_id" id="sponsorStudentSelect" required><option value="">Select student</option><?php foreach ($students as $s): ?><option value="<?= (int) $s['id'] ?>"><?= e(trim($s['student_number'] . ' — ' . trim(($s['first_name'] ?? '') . ' ' . ($s['last_name'] ?? '')))) ?></option><?php endforeach; ?></select></div>
         <div class="form-group"><label>Coverage %</label><input type="number" name="coverage_percent" value="100" min="1" max="100"></div>
         <button type="submit" class="btn btn-outline">Link</button>
     </form></div></div>
@@ -92,5 +102,10 @@ require __DIR__ . '/../../includes/finance-nav.php';
 </tr>
 <?php endforeach; ?>
 </tbody></table></div></div>
+
+<script>
+msshtSearchableSelect('sponsorSearch', 'sponsorSelect');
+msshtSearchableSelect('sponsorStudentSearch', 'sponsorStudentSelect');
+</script>
 
 <?php require_once __DIR__ . '/../../includes/footer.php'; ?>

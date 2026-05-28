@@ -250,6 +250,75 @@ function createStudentPortalAccount(int $studentId, bool $resetPassword = false)
     ];
 }
 
+/**
+ * Create a portal login for a student that was registered directly by staff.
+ * @return array{email:string,temp_password:string,student_number:string,is_new:bool}|null
+ */
+function createDirectStudentPortalAccount(int $studentId, string $firstName, string $lastName, string $email, ?string $phone = null, bool $resetPassword = false): ?array
+{
+    $db = getDB();
+    $stmt = $db->prepare('SELECT * FROM students WHERE id = ?');
+    $stmt->execute([$studentId]);
+    $student = $stmt->fetch();
+    if (!$student) {
+        return null;
+    }
+
+    $email = trim($email);
+    if ($email === '') {
+        $email = strtolower($student['student_number']) . '@students.mssht.ac.zw';
+    }
+
+    $tempPassword = generateStudentTempPassword($student['student_number']);
+    $hash = password_hash($tempPassword, PASSWORD_DEFAULT);
+    $isNew = empty($student['user_id']);
+    $firstName = trim($firstName) ?: 'Student';
+    $lastName = trim($lastName) ?: $student['student_number'];
+    $phone = trim((string) $phone);
+
+    $existingUserId = (int) ($student['user_id'] ?? 0);
+    if ($existingUserId) {
+        if ($resetPassword) {
+            $db->prepare('UPDATE users SET email = ?, password_hash = ?, status = ?, must_change_password = 1 WHERE id = ?')
+               ->execute([$email, $hash, 'active', $existingUserId]);
+        } else {
+            $db->prepare('UPDATE users SET email = ? WHERE id = ?')->execute([$email, $existingUserId]);
+        }
+        $db->prepare('UPDATE user_profiles SET first_name = ?, last_name = ?, phone = ? WHERE user_id = ?')
+           ->execute([$firstName, $lastName, $phone, $existingUserId]);
+        return [
+            'email' => $email,
+            'temp_password' => $tempPassword,
+            'student_number' => $student['student_number'],
+            'is_new' => $isNew,
+        ];
+    }
+
+    $check = $db->prepare('SELECT id FROM users WHERE email = ?');
+    $check->execute([$email]);
+    if ($check->fetch()) {
+        $email = strtolower($student['student_number']) . '+' . $studentId . '@students.mssht.ac.zw';
+    }
+
+    $db->prepare(
+        'INSERT INTO users (email, password_hash, role, status, must_change_password) VALUES (?, ?, ?, ?, 1)'
+    )->execute([$email, $hash, 'student', 'active']);
+    $userId = (int) $db->lastInsertId();
+
+    $db->prepare('INSERT INTO user_profiles (user_id, first_name, last_name, phone) VALUES (?, ?, ?, ?)')
+       ->execute([$userId, $firstName, $lastName, $phone !== '' ? $phone : null]);
+    $db->prepare('UPDATE students SET user_id = ? WHERE id = ?')->execute([$userId, $studentId]);
+
+    auditLog('student_portal_created', 'student', $studentId);
+
+    return [
+        'email' => $email,
+        'temp_password' => $tempPassword,
+        'student_number' => $student['student_number'],
+        'is_new' => $isNew,
+    ];
+}
+
 function studentPortalLoginFailure(): ?string
 {
     return $_SESSION['login_error_detail'] ?? null;

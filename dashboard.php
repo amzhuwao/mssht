@@ -24,7 +24,7 @@ $moduleLabels = [
     'reports'    => 'Reporting & Analytics',
     'graduation' => 'Certification & Graduation',
 ];
-$modules = ROLE_MODULES[$role] ?? [];
+$modules = getRoleModules($role);
 $accessibleModules = array_values(array_filter($modules, static function ($module) use ($moduleLabels) {
     return isset($moduleLabels[$module]);
 }));
@@ -97,7 +97,7 @@ if (isStudentPortal()) {
             <div class="hero-metrics">
                 <div>
                     <span>Role</span>
-                    <strong><?= e(ROLES[$role] ?? $role) ?></strong>
+                    <strong><?= e(roleLabel($role)) ?></strong>
                 </div>
                 <div>
                     <span>Modules unlocked</span>
@@ -193,7 +193,7 @@ if (isStudentPortal()) {
             <h2>Welcome, <?= e($user['first_name'] ?? 'User') ?></h2>
         </div>
         <div class="card-body">
-            <p>You are logged in as <strong><?= e(ROLES[$role] ?? $role) ?></strong>.</p>
+            <p>You are logged in as <strong><?= e(roleLabel($role)) ?></strong>.</p>
             <p class="text-muted">Use the sidebar to access modules available for your role.</p>
             <div class="quick-links">
                 <?php if (canAccessModule('admissions')): ?>

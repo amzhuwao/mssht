@@ -1,6 +1,6 @@
 <?php
 $currentUser = currentUser();
-$roleLabel = ROLES[$currentUser['role'] ?? ''] ?? 'User';
+$roleLabel = roleLabel($currentUser['role'] ?? null);
 $pageTitle = $pageTitle ?? 'Dashboard';
 $tag = 'div';
 ?>

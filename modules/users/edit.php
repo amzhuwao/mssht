@@ -44,8 +44,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && verifyCsrf($_POST['csrf'] ?? '')) {
     $newPassword = trim($_POST['password'] ?? '');
     $department = trim($_POST['department'] ?? '');
     $position = trim($_POST['position'] ?? 'Lecturer');
-    $allowModules = array_values(array_unique(array_filter((array) ($_POST['allow_modules'] ?? []))));
-    $denyModules = array_values(array_unique(array_filter((array) ($_POST['deny_modules'] ?? []))));
+    // module_access is an associative array: module_access[module_name] => 'inherit'|'allow'|'deny'
+    $moduleAccess = (array) ($_POST['module_access'] ?? []);
+    $allowModules = [];
+    $denyModules = [];
+    foreach ($moduleAccess as $mName => $access) {
+        if ($access === 'allow') $allowModules[] = $mName;
+        if ($access === 'deny') $denyModules[] = $mName;
+    }
 
     try {
         $db->beginTransaction();
@@ -108,9 +114,53 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && verifyCsrf($_POST['csrf'] ?? '')) {
     }
 }
 
-$roleList = ROLES;
+$roleList = getRoles();
 require_once __DIR__ . '/../../includes/header.php';
 ?>
+
+<?php
+// Fetch a small list of users for the quick selector
+$allUsersStmt = $db->query('SELECT u.id, u.email, p.first_name, p.last_name FROM users u LEFT JOIN user_profiles p ON p.user_id = u.id ORDER BY u.email');
+$allUsers = $allUsersStmt->fetchAll();
+?>
+
+<div style="margin-bottom:1rem;display:flex;gap:1rem;align-items:center;">
+    <label style="font-weight:600;">Edit user:</label>
+    <input type="text" id="userSelectorSearch" placeholder="Search user by name or email" style="min-width:260px;">
+    <select id="userSelector" style="min-width:320px;">
+        <?php foreach ($allUsers as $au): ?>
+        <option value="<?= (int)$au['id'] ?>" <?= (int)$au['id'] === $id ? 'selected' : '' ?>><?= e(($au['first_name'] || $au['last_name']) ? trim(($au['first_name'] . ' ' . $au['last_name'])) : $au['email']) ?></option>
+        <?php endforeach; ?>
+    </select>
+</div>
+
+<script>
+document.getElementById('userSelectorSearch')?.addEventListener('input', function () {
+    var q = this.value.toLowerCase().trim();
+    var select = document.getElementById('userSelector');
+    if (!select) return;
+    var currentValue = select.value;
+    var options = Array.from(select.options).map(function (option) {
+        return { value: option.value, text: option.textContent };
+    });
+    select.innerHTML = '';
+    options.forEach(function (option, index) {
+        if (!q || index === 0 || option.text.toLowerCase().indexOf(q) > -1) {
+            var opt = document.createElement('option');
+            opt.value = option.value;
+            opt.textContent = option.text;
+            select.appendChild(opt);
+        }
+    });
+    if (currentValue) select.value = currentValue;
+});
+document.getElementById('userSelector').addEventListener('change', function () {
+    var uid = this.value;
+    if (uid) {
+        window.location = 'edit.php?id=' + encodeURIComponent(uid);
+    }
+});
+</script>
 
 <div class="page-actions">
     <a href="index.php" class="btn btn-outline btn-sm">&larr; Back to Users</a>
@@ -140,7 +190,8 @@ require_once __DIR__ . '/../../includes/header.php';
                 <div class="form-group"><label>Address</label><input name="address" value="<?= e($user['address'] ?? '') ?>"></div>
                 <div class="form-group">
                     <label>Role</label>
-                    <select name="role" required>
+                    <input type="text" id="userEditRoleSearch" placeholder="Search roles">
+                    <select name="role" id="userEditRoleSelect" required>
                         <?php foreach ($roleList as $key => $label): ?>
                         <option value="<?= e($key) ?>" <?= $user['role'] === $key ? 'selected' : '' ?>><?= e($label) ?></option>
                         <?php endforeach; ?>
@@ -175,25 +226,24 @@ require_once __DIR__ . '/../../includes/header.php';
             <h3 style="margin:1.5rem 0 1rem;">Module Access Overrides</h3>
             <p class="text-muted">By default, the selected role controls access. Use these overrides only when you need to grant or restrict specific modules for this user.</p>
             <div class="form-row" style="align-items:flex-start;">
-                <div class="form-group" style="min-width:280px;flex:1;">
-                    <label>Allow these modules</label>
-                    <div class="card" style="padding:0.75rem 1rem;max-height:280px;overflow:auto;">
-                        <?php foreach (MODULE_CATALOG as $moduleName): ?>
-                        <label style="display:flex;align-items:center;gap:.5rem;margin:.35rem 0;">
-                            <input type="checkbox" name="allow_modules[]" value="<?= e($moduleName) ?>" <?= (($permissionMap[$moduleName] ?? '') === 'allow') ? 'checked' : '' ?>>
-                            <span><?= e(ucfirst(str_replace('_', ' ', $moduleName))) ?></span>
-                        </label>
-                        <?php endforeach; ?>
-                    </div>
-                </div>
-                <div class="form-group" style="min-width:280px;flex:1;">
-                    <label>Deny these modules</label>
-                    <div class="card" style="padding:0.75rem 1rem;max-height:280px;overflow:auto;">
-                        <?php foreach (MODULE_CATALOG as $moduleName): ?>
-                        <label style="display:flex;align-items:center;gap:.5rem;margin:.35rem 0;">
-                            <input type="checkbox" name="deny_modules[]" value="<?= e($moduleName) ?>" <?= (($permissionMap[$moduleName] ?? '') === 'deny') ? 'checked' : '' ?>>
-                            <span><?= e(ucfirst(str_replace('_', ' ', $moduleName))) ?></span>
-                        </label>
+                <div class="form-group" style="flex:1;">
+                    <label>Per-module access</label>
+                    <div class="card" style="padding:0.75rem 1rem;max-height:420px;overflow:auto;">
+                        <?php foreach (MODULE_CATALOG as $moduleName):
+                            $current = $permissionMap[$moduleName] ?? 'inherit';
+                        ?>
+                        <div style="display:flex;align-items:center;justify-content:space-between;gap:1rem;margin:.35rem 0;">
+                            <div style="flex:1;">
+                                <?= e(ucfirst(str_replace('_', ' ', $moduleName))) ?>
+                            </div>
+                            <div style="width:220px;">
+                                <select name="module_access[<?= e($moduleName) ?>]" style="width:100%;">
+                                    <option value="inherit" <?= $current === 'inherit' ? 'selected' : '' ?>>Inherit (role)</option>
+                                    <option value="allow" <?= $current === 'allow' ? 'selected' : '' ?>>Allow</option>
+                                    <option value="deny" <?= $current === 'deny' ? 'selected' : '' ?>>Deny</option>
+                                </select>
+                            </div>
+                        </div>
                         <?php endforeach; ?>
                     </div>
                 </div>
@@ -203,5 +253,9 @@ require_once __DIR__ . '/../../includes/header.php';
         </form>
     </div>
 </div>
+
+<script>
+msshtSearchableSelect('userEditRoleSearch', 'userEditRoleSelect');
+</script>
 
 <?php require_once __DIR__ . '/../../includes/footer.php'; ?>

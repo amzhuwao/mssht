@@ -143,6 +143,14 @@ require_once __DIR__ . '/../../includes/header.php';
     </div>
 </div>
 
+<div class="card" style="margin-top:1.5rem;">
+    <div class="card-header"><h2>User Roles</h2></div>
+    <div class="card-body">
+        <p class="text-muted">Create and manage custom user roles and their module access.</p>
+        <a href="<?= moduleUrl('settings', 'roles') ?>" class="btn btn-primary">Manage Roles</a>
+    </div>
+</div>
+
 <script>
 document.getElementById('mailDriver')?.addEventListener('change', function () {
     document.getElementById('smtpFields').style.display = this.value === 'smtp' ? '' : 'none';

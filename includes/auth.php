@@ -49,7 +49,7 @@ function getUserModulePermissions(?int $userId = null): array
 function getAccessibleModules(?int $userId = null): array
 {
     $role = currentRole();
-    $modules = ROLE_MODULES[$role] ?? [];
+    $modules = getRoleModules($role);
     $permissions = getUserModulePermissions($userId);
 
     foreach ($permissions as $moduleName => $access) {
@@ -95,7 +95,7 @@ function canAccessModule(string $module): bool
     if (($permissions[$module] ?? null) === 'allow') {
         return true;
     }
-    $modules = ROLE_MODULES[$role] ?? [];
+    $modules = getRoleModules($role);
     return in_array($module, $modules, true);
 }
 

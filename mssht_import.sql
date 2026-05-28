@@ -27,10 +27,25 @@ CREATE TABLE users (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     INDEX idx_role (role),
-    INDEX idx_status (status)
+    INDEX idx_status (status),
+    FOREIGN KEY (role) REFERENCES roles(role_key) ON UPDATE CASCADE ON DELETE RESTRICT
 ) ENGINE=InnoDB;
 
-ALTER TABLE users ADD CONSTRAINT fk_users_role FOREIGN KEY (role) REFERENCES roles(role_key) ON UPDATE CASCADE ON DELETE RESTRICT;
+INSERT INTO roles (role_key, label, module_permissions, is_system, status, sort_order) VALUES
+('super_admin', 'Super Administrator', '["dashboard","admissions","programs","students","classes","timetable","lms","attendance","exams","finance","hr","library","placements","messages","reports","graduation","settings","users","notifications"]', 1, 'active', 1),
+('registrar', 'Registrar / Academic Admin', '["dashboard","admissions","programs","students","classes","timetable","exams","reports","graduation","messages"]', 1, 'active', 2),
+('finance', 'Finance Officer', '["dashboard","finance","students","reports","messages"]', 1, 'active', 3),
+('lecturer', 'Lecturer / Trainer', '["dashboard","classes","lms","attendance","exams","timetable","messages"]', 1, 'active', 4),
+('student', 'Student', '["dashboard","classes","lms","attendance","exams","finance","library","placements","messages","notifications"]', 1, 'active', 5),
+('hod', 'HOD / Dean', '["dashboard","programs","students","classes","timetable","exams","reports","messages"]', 1, 'active', 6),
+('librarian', 'Librarian', '["dashboard","library","messages"]', 1, 'active', 7),
+('external_examiner', 'External Examiner', '["dashboard","exams","messages"]', 1, 'active', 8)
+ON DUPLICATE KEY UPDATE
+    label = VALUES(label),
+    module_permissions = VALUES(module_permissions),
+    is_system = VALUES(is_system),
+    status = VALUES(status),
+    sort_order = VALUES(sort_order);
 
 CREATE TABLE user_module_permissions (
     id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
@@ -454,22 +469,6 @@ CREATE TABLE audit_logs (
 ) ENGINE=InnoDB;
 
 -- Seed default super admin (password: Admin@123)
-INSERT INTO roles (role_key, label, module_permissions, is_system, status, sort_order) VALUES
-('super_admin', 'Super Administrator', '["dashboard","admissions","programs","students","classes","timetable","lms","attendance","exams","finance","hr","library","placements","messages","reports","graduation","settings","users","notifications"]', 1, 'active', 1),
-('registrar', 'Registrar / Academic Admin', '["dashboard","admissions","programs","students","classes","timetable","exams","reports","graduation","messages"]', 1, 'active', 2),
-('finance', 'Finance Officer', '["dashboard","finance","students","reports","messages"]', 1, 'active', 3),
-('lecturer', 'Lecturer / Trainer', '["dashboard","classes","lms","attendance","exams","timetable","messages"]', 1, 'active', 4),
-('student', 'Student', '["dashboard","classes","lms","attendance","exams","finance","library","placements","messages","notifications"]', 1, 'active', 5),
-('hod', 'HOD / Dean', '["dashboard","programs","students","classes","timetable","exams","reports","messages"]', 1, 'active', 6),
-('librarian', 'Librarian', '["dashboard","library","messages"]', 1, 'active', 7),
-('external_examiner', 'External Examiner', '["dashboard","exams","messages"]', 1, 'active', 8)
-ON DUPLICATE KEY UPDATE
-    label = VALUES(label),
-    module_permissions = VALUES(module_permissions),
-    is_system = VALUES(is_system),
-    status = VALUES(status),
-    sort_order = VALUES(sort_order);
-
 INSERT INTO users (email, password_hash, role, status) VALUES
 ('admin@mssht.ac.zw', '$2y$10$evJtjIdvtv9sBnWqcfx9xuTunp38PE3AwNDyNiVHY/LcsbBpd9kdK', 'super_admin', 'active');
 

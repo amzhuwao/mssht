@@ -77,7 +77,8 @@ require __DIR__ . '/../../includes/finance-nav.php';
         <?php endif; ?>
         <?php if (in_array($r['status'], ['finance_approved', 'procurement_approved'], true)): ?>
         <form method="post" style="display:inline-flex;gap:.25rem;"><input type="hidden" name="csrf" value="<?= csrfToken() ?>"><input type="hidden" name="action" value="create_po"><input type="hidden" name="req_id" value="<?= (int)$r['id'] ?>">
-        <select name="supplier_id" required style="max-width:120px;"><?php foreach ($suppliers as $s): ?><option value="<?= $s['id'] ?>"><?= e($s['name']) ?></option><?php endforeach; ?></select>
+        <input type="text" id="poSupplierSearch" placeholder="Search supplier" style="max-width:140px;">
+        <select name="supplier_id" id="poSupplierSelect" required style="max-width:160px;"><option value="">Select supplier</option><?php foreach ($suppliers as $s): ?><option value="<?= (int) $s['id'] ?>"><?= e($s['name']) ?></option><?php endforeach; ?></select>
         <button class="btn btn-sm btn-primary">PO</button></form>
         <?php endif; ?>
     </td>
@@ -97,5 +98,9 @@ require __DIR__ . '/../../includes/finance-nav.php';
 </tr>
 <?php endforeach; ?>
 </tbody></table></div></div>
+
+<script>
+msshtSearchableSelect('poSupplierSearch', 'poSupplierSelect');
+</script>
 
 <?php require_once __DIR__ . '/../../includes/footer.php'; ?>

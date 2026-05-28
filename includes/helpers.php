@@ -89,6 +89,65 @@ function programTypeLabel(string $type): string
     return $labels[$type] ?? $type;
 }
 
+    function getRoles(): array
+    {
+        static $cache = null;
+        if ($cache !== null) {
+            return $cache;
+        }
+
+        $cache = DEFAULT_ROLES;
+        try {
+            $db = getDB();
+            $rows = $db->query('SELECT role_key, label FROM roles WHERE status = "active" ORDER BY sort_order, label')->fetchAll();
+            foreach ($rows as $row) {
+                $cache[$row['role_key']] = $row['label'];
+            }
+        } catch (Exception $e) {
+            // Fall back to built-in roles until the roles table exists.
+        }
+
+        return $cache;
+    }
+
+    function roleLabel(?string $roleKey): string
+    {
+        if (!$roleKey) {
+            return 'User';
+        }
+
+        $roles = getRoles();
+        if (isset($roles[$roleKey])) {
+            return $roles[$roleKey];
+        }
+
+        return ucwords(str_replace(['_', '-'], ' ', $roleKey));
+    }
+
+    function getRoleModules(?string $roleKey): array
+    {
+        if (!$roleKey) {
+            return [];
+        }
+
+        try {
+            $db = getDB();
+            $stmt = $db->prepare('SELECT module_permissions FROM roles WHERE role_key = ? AND status = "active" LIMIT 1');
+            $stmt->execute([$roleKey]);
+            $json = $stmt->fetchColumn();
+            if ($json) {
+                $decoded = json_decode((string) $json, true);
+                if (is_array($decoded)) {
+                    return array_values(array_filter($decoded, static fn ($module) => is_string($module) && $module !== ''));
+                }
+            }
+        } catch (Exception $e) {
+            // Use defaults below.
+        }
+
+        return DEFAULT_ROLE_MODULES[$roleKey] ?? [];
+    }
+
 function statusBadge(string $status): string
 {
     $map = [

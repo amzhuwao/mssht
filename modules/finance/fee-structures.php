@@ -49,10 +49,12 @@ require __DIR__ . '/../../includes/finance-nav.php';
         <div class="card-body">
             <form method="post">
                 <input type="hidden" name="csrf" value="<?= csrfToken() ?>">
-                <div class="form-group"><label>Program</label><select name="program_id" required>
+                <div class="form-group"><label>Search program</label><input type="text" id="feeProgramSearch" placeholder="Search programs"></div>
+                <div class="form-group"><label>Program</label><select name="program_id" id="feeProgramSelect" required>
                     <?php foreach ($programs as $p): ?><option value="<?= $p['id'] ?>"><?= e($p['name']) ?> (<?= programTypeLabel($p['program_type']) ?>)</option><?php endforeach; ?>
                 </select></div>
-                <div class="form-group"><label>Intake (optional)</label><select name="intake_id"><option value="">All intakes</option>
+                <div class="form-group"><label>Search intake</label><input type="text" id="feeIntakeSearch" placeholder="Search intakes"></div>
+                <div class="form-group"><label>Intake (optional)</label><select name="intake_id" id="feeIntakeSelect"><option value="">All intakes</option>
                     <?php foreach ($intakes as $i): ?><option value="<?= $i['id'] ?>"><?= e($i['name']) ?></option><?php endforeach; ?>
                 </select></div>
                 <div class="form-group"><label>Description</label><input name="description" required></div>
@@ -106,5 +108,10 @@ require __DIR__ . '/../../includes/finance-nav.php';
         </table>
     </div>
 </div>
+
+<script>
+msshtSearchableSelect('feeProgramSearch', 'feeProgramSelect');
+msshtSearchableSelect('feeIntakeSearch', 'feeIntakeSelect');
+</script>
 
 <?php require_once __DIR__ . '/../../includes/footer.php'; ?>

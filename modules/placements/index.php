@@ -22,7 +22,15 @@ $placements = $db->query(
     'SELECT pl.*, s.student_number FROM placements pl
      JOIN students s ON s.id = pl.student_id ORDER BY pl.start_date DESC'
 )->fetchAll();
-$students = $db->query("SELECT id, student_number FROM students WHERE enrollment_status = 'active'")->fetchAll();
+$students = $db->query(
+    "SELECT s.id, s.student_number, COALESCE(a.first_name, up.first_name) AS first_name, COALESCE(a.last_name, up.last_name) AS last_name
+     FROM students s
+     LEFT JOIN applications a ON a.id = s.application_id
+     LEFT JOIN users u ON u.id = s.user_id
+     LEFT JOIN user_profiles up ON up.user_id = u.id
+     WHERE s.enrollment_status = 'active'
+     ORDER BY s.student_number"
+)->fetchAll();
 
 require_once __DIR__ . '/../../includes/header.php';
 ?>
@@ -32,7 +40,8 @@ require_once __DIR__ . '/../../includes/header.php';
     <div class="card-body">
         <form method="post" class="form-row">
             <input type="hidden" name="csrf" value="<?= csrfToken() ?>">
-            <div class="form-group"><label>Student</label><select name="student_id" required><?php foreach ($students as $s): ?><option value="<?= $s['id'] ?>"><?= e($s['student_number']) ?></option><?php endforeach; ?></select></div>
+            <div class="form-group"><label>Search student</label><input type="text" id="placementStudentSearch" placeholder="Search by student number, name, or surname"></div>
+            <div class="form-group"><label>Student</label><select name="student_id" id="placementStudentSelect" required><option value="">Select student</option><?php foreach ($students as $s): ?><option value="<?= (int) $s['id'] ?>"><?= e(trim($s['student_number'] . ' — ' . trim(($s['first_name'] ?? '') . ' ' . ($s['last_name'] ?? '')))) ?></option><?php endforeach; ?></select></div>
             <div class="form-group"><label>Employer *</label><input name="employer_name" required></div>
             <div class="form-group"><label>Supervisor</label><input name="supervisor_name"></div>
             <div class="form-group"><label>Contact</label><input name="supervisor_contact"></div>
@@ -61,5 +70,9 @@ require_once __DIR__ . '/../../includes/header.php';
         </table>
     </div>
 </div>
+
+<script>
+msshtSearchableSelect('placementStudentSearch', 'placementStudentSelect');
+</script>
 
 <?php require_once __DIR__ . '/../../includes/footer.php'; ?>

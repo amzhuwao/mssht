@@ -51,10 +51,10 @@ define('DB_PASS', '');
 
 ### 3. Set the application URL
 
-Edit `config/app.php`:
+Edit `config/app.php` or set the `APP_URL` environment variable. Example:
 
-```php
-define('APP_URL', 'http://localhost/mssht');
+```
+define('APP_URL', 'http(s)://your-host/mssht');
 ```
 
 Use your actual host/path if different.
@@ -74,7 +74,7 @@ This installs Dompdf for invoice and grade PDF exports.
 **Option A — Web installer (recommended for first install)**
 
 1. Start Apache and MySQL in XAMPP.
-2. Open [http://localhost/mssht/install.php](http://localhost/mssht/install.php)
+2. Open [install.php](install.php)
 3. Click **Install Database** (runs `database/schema.sql` and resets the admin password).
 
 **Option B — Command line**
@@ -106,9 +106,9 @@ php tools/install-migration-005.php
 
 | Portal | URL | Default credentials |
 |--------|-----|---------------------|
-| **Staff** | [login.php](http://localhost/mssht/login.php) | `admin@mssht.ac.zw` / `Admin@123` |
-| **Students** | [student-login.php](http://localhost/mssht/student-login.php) | Created on admission approval (see below) |
-| **Public site** | [index.php](http://localhost/mssht/index.php) | — |
+| **Staff** | [login.php](login.php) | `admin@mssht.ac.zw` / `Admin@123` |
+| **Students** | [student-login.php](student-login.php) | Created on admission approval (see below) |
+| **Public site** | [index.php](index.php) | — |
 
 **Change the admin password immediately** after first login.
 

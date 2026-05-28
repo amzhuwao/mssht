@@ -1,7 +1,7 @@
 <?php
 /**
  * MSSHT Database Installer
- * Run once: http://localhost/mssht/install.php
+ * Run once: visit APP_URL/install.php or open /install.php in your browser
  */
 require_once __DIR__ . '/config/app.php';
 require_once __DIR__ . '/config/database.php';

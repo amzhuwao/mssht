@@ -258,7 +258,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <div class="form-row">
                 <div class="form-group">
                     <label>Program *</label>
-                    <select name="program_id" required>
+                    <input type="text" id="applyProgramSearch" placeholder="Search programs">
+                    <select name="program_id" id="applyProgramSelect" required>
                         <option value="">Select program</option>
                         <?php foreach ($programs as $p): ?>
                         <option value="<?= $p['id'] ?>"><?= e($p['name']) ?> (<?= programTypeLabel($p['program_type']) ?>)</option>
@@ -267,7 +268,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 </div>
                 <div class="form-group">
                     <label>Intake *</label>
-                    <select name="intake_id" required>
+                    <input type="text" id="applyIntakeSearch" placeholder="Search intakes">
+                    <select name="intake_id" id="applyIntakeSelect" required>
                         <option value="">Select intake</option>
                         <?php foreach ($intakes as $i): ?>
                         <option value="<?= $i['id'] ?>"><?= e($i['name']) ?></option>
@@ -504,5 +506,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     </form>
     <?php endif; ?>
 </div>
+
+<script src="<?= asset('js/app.js') ?>"></script>
+<script>
+msshtSearchableSelect('applyProgramSearch', 'applyProgramSelect');
+msshtSearchableSelect('applyIntakeSearch', 'applyIntakeSelect');
+</script>
+
 </body>
 </html>

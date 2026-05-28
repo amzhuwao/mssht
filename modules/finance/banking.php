@@ -92,7 +92,8 @@ require __DIR__ . '/../../includes/finance-nav.php';
 <div class="card" style="margin-top:1.5rem;"><div class="card-header"><h2>Record bank transaction</h2></div>
 <div class="card-body"><form method="post" class="form-row">
     <input type="hidden" name="csrf" value="<?= csrfToken() ?>"><input type="hidden" name="action" value="import_txn">
-    <div class="form-group"><label>Account</label><select name="bank_account_id" required><?php foreach ($accounts as $a): ?><option value="<?= $a['id'] ?>"><?= e($a['name']) ?></option><?php endforeach; ?></select></div>
+    <div class="form-group"><label>Search account</label><input type="text" id="bankAccountSearch" placeholder="Search account name or bank"></div>
+    <div class="form-group"><label>Account</label><select name="bank_account_id" id="bankAccountSelect" required><option value="">Select account</option><?php foreach ($accounts as $a): ?><option value="<?= (int) $a['id'] ?>"><?= e($a['name'] . ' — ' . $a['bank_name'] . ' (' . $a['account_number'] . ')') ?></option><?php endforeach; ?></select></div>
     <div class="form-group"><label>Date</label><input type="date" name="txn_date" value="<?= date('Y-m-d') ?>" required></div>
     <div class="form-group"><label>Description</label><input name="description" required></div>
     <div class="form-group"><label>Reference</label><input name="reference"></div>
@@ -112,12 +113,20 @@ require __DIR__ . '/../../includes/finance-nav.php';
     <td><?= $t['is_reconciled'] ? 'Yes' : 'No' ?></td>
     <td><?php if (!$t['is_reconciled'] && $t['txn_type'] === 'credit'): ?>
     <form method="post" style="display:inline-flex;gap:.25rem;"><input type="hidden" name="csrf" value="<?= csrfToken() ?>"><input type="hidden" name="action" value="match"><input type="hidden" name="txn_id" value="<?= (int)$t['id'] ?>">
-    <select name="payment_id"><option value="">—</option><?php foreach ($unmatchedPayments as $p): ?><option value="<?= $p['id'] ?>"><?= e($p['receipt_number'] ?? $p['id']) ?> <?= formatMoney((float)$p['amount']) ?></option><?php endforeach; ?></select>
+    <input type="text" id="paymentSearch_<?= (int)$t['id'] ?>" placeholder="Search payment" style="width:120px;">
+    <select name="payment_id" id="paymentSelect_<?= (int)$t['id'] ?>"><option value="">—</option><?php foreach ($unmatchedPayments as $p): ?><option value="<?= (int) $p['id'] ?>"><?= e(($p['receipt_number'] ?? $p['id']) . ' — ' . $p['invoice_number'] . ' — ' . formatMoney((float)$p['amount'])) ?></option><?php endforeach; ?></select>
     <button class="btn btn-sm btn-outline">Match</button></form>
     <?php endif; ?></td>
 </tr>
 <?php endforeach; ?>
 </tbody></table></div></div>
+
+<script>
+msshtSearchableSelect('bankAccountSearch', 'bankAccountSelect');
+<?php foreach ($txns as $t): if (!$t['is_reconciled'] && $t['txn_type'] === 'credit'): ?>
+msshtSearchableSelect('paymentSearch_<?= (int)$t['id'] ?>', 'paymentSelect_<?= (int)$t['id'] ?>');
+<?php endif; endforeach; ?>
+</script>
 
 <?php if ($rates): ?>
 <div class="card" style="margin-top:1rem;"><div class="card-header"><h2>Recent exchange rates</h2></div>

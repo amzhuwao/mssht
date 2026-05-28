@@ -58,6 +58,46 @@
         });
     });
 
+    // Searchable select helper
+    window.msshtSearchableSelect = function (searchId, selectId) {
+        var $search = $('#' + searchId);
+        var $select = $('#' + selectId);
+        if (!$search.length || !$select.length) return;
+
+        var options = $select.find('option').map(function () {
+            return {
+                value: this.value,
+                text: $(this).text()
+            };
+        }).get();
+
+        $search.on('input', function () {
+            var q = $(this).val().toLowerCase().trim();
+            var currentValue = $select.val();
+
+            $select.empty();
+            options.forEach(function (option, index) {
+                if (index === 0) {
+                    $('<option>')
+                        .attr('value', option.value)
+                        .text(option.text)
+                        .appendTo($select);
+                    return;
+                }
+                if (!q || option.text.toLowerCase().indexOf(q) > -1) {
+                    $('<option>')
+                        .attr('value', option.value)
+                        .text(option.text)
+                        .appendTo($select);
+                }
+            });
+
+            if (currentValue) {
+                $select.val(currentValue);
+            }
+        });
+    };
+
     // Application status update
     $('.status-form').on('submit', function (e) {
         e.preventDefault();

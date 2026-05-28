@@ -29,7 +29,15 @@ $graduations = $db->query(
      FROM graduations g JOIN students s ON s.id = g.student_id
      JOIN programs p ON p.id = g.program_id ORDER BY g.graduation_date DESC'
 )->fetchAll();
-$eligible = $db->query("SELECT id, student_number FROM students WHERE enrollment_status = 'active'")->fetchAll();
+$eligible = $db->query(
+    "SELECT s.id, s.student_number, COALESCE(a.first_name, up.first_name) AS first_name, COALESCE(a.last_name, up.last_name) AS last_name
+     FROM students s
+     LEFT JOIN applications a ON a.id = s.application_id
+     LEFT JOIN users u ON u.id = s.user_id
+     LEFT JOIN user_profiles up ON up.user_id = u.id
+     WHERE s.enrollment_status = 'active'
+     ORDER BY s.student_number"
+)->fetchAll();
 
 require_once __DIR__ . '/../../includes/header.php';
 ?>
@@ -39,7 +47,8 @@ require_once __DIR__ . '/../../includes/header.php';
     <div class="card-body">
         <form method="post" class="form-row">
             <input type="hidden" name="csrf" value="<?= csrfToken() ?>">
-            <div class="form-group"><label>Student</label><select name="student_id" required><?php foreach ($eligible as $s): ?><option value="<?= $s['id'] ?>"><?= e($s['student_number']) ?></option><?php endforeach; ?></select></div>
+            <div class="form-group"><label>Search student</label><input type="text" id="gradStudentSearch" placeholder="Search by student number, name, or surname"></div>
+            <div class="form-group"><label>Student</label><select name="student_id" id="gradStudentSelect" required><option value="">Select student</option><?php foreach ($eligible as $s): ?><option value="<?= (int) $s['id'] ?>"><?= e(trim($s['student_number'] . ' — ' . trim(($s['first_name'] ?? '') . ' ' . ($s['last_name'] ?? '')))) ?></option><?php endforeach; ?></select></div>
             <div class="form-group"><label>Graduation Date</label><input type="date" name="graduation_date" required></div>
             <div class="form-group"><label>GPA</label><input type="number" step="0.01" name="gpa" min="0" max="4"></div>
             <div class="form-group" style="align-self:flex-end;"><button type="submit" class="btn btn-primary">Issue Certificate</button></div>
@@ -67,5 +76,9 @@ require_once __DIR__ . '/../../includes/header.php';
         </table>
     </div>
 </div>
+
+<script>
+msshtSearchableSelect('gradStudentSearch', 'gradStudentSelect');
+</script>
 
 <?php require_once __DIR__ . '/../../includes/footer.php'; ?>

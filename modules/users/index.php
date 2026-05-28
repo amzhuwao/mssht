@@ -5,6 +5,8 @@ requireModule('users');
 $pageTitle = 'User Management';
 $currentModule = 'users';
 $db = getDB();
+$roleOptions = getRoles();
+$roleCount = count($roleOptions);
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && verifyCsrf($_POST['csrf'] ?? '')) {
     $hash = password_hash($_POST['password'], PASSWORD_DEFAULT);
@@ -30,7 +32,9 @@ require_once __DIR__ . '/../../includes/header.php';
 ?>
 
 <div class="card">
-    <div class="card-header"><h2>Add User</h2></div>
+    <div class="card-header">
+        <h2>Add User <a href="<?= moduleUrl('settings', 'roles') ?>" class="badge badge-secondary" style="margin-left:.5rem;vertical-align:middle;">Roles: <?= (int) $roleCount ?></a></h2>
+    </div>
     <div class="card-body">
         <form method="post">
             <input type="hidden" name="csrf" value="<?= csrfToken() ?>">
@@ -41,8 +45,9 @@ require_once __DIR__ . '/../../includes/header.php';
                 <div class="form-group"><label>Phone</label><input name="phone"></div>
                 <div class="form-group">
                     <label>Role</label>
-                    <select name="role" required>
-                        <?php foreach (ROLES as $key => $label): ?>
+                    <input type="text" id="userCreateRoleSearch" placeholder="Search roles">
+                    <select name="role" id="userCreateRoleSelect" required>
+                        <?php foreach ($roleOptions as $key => $label): ?>
                         <option value="<?= $key ?>"><?= e($label) ?></option>
                         <?php endforeach; ?>
                     </select>
@@ -64,7 +69,7 @@ require_once __DIR__ . '/../../includes/header.php';
             <tr>
                 <td><?= e($u['first_name'] . ' ' . $u['last_name']) ?></td>
                 <td><?= e($u['email']) ?></td>
-                <td><?= e(ROLES[$u['role']] ?? $u['role']) ?></td>
+                <td><?= e(roleLabel($u['role'])) ?></td>
                 <td><?= statusBadge($u['status']) ?></td>
                 <td><?= $u['last_login'] ? formatDate($u['last_login'], 'd M Y H:i') : 'Never' ?></td>
                 <td><a href="edit.php?id=<?= (int)$u['id'] ?>" class="btn btn-sm btn-outline">Edit</a></td>
@@ -74,5 +79,9 @@ require_once __DIR__ . '/../../includes/header.php';
         </table>
     </div>
 </div>
+
+<script>
+msshtSearchableSelect('userCreateRoleSearch', 'userCreateRoleSelect');
+</script>
 
 <?php require_once __DIR__ . '/../../includes/footer.php'; ?>

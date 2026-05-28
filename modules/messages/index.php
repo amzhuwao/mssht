@@ -41,7 +41,7 @@ require_once __DIR__ . '/../../includes/header.php';
                     <label>To</label>
                     <select name="recipient_id" required>
                         <?php foreach ($users as $u): ?>
-                        <option value="<?= $u['id'] ?>"><?= e($u['first_name'].' '.$u['last_name']) ?> (<?= e(ROLES[$u['role']] ?? $u['role']) ?>)</option>
+                        <option value="<?= $u['id'] ?>"><?= e($u['first_name'].' '.$u['last_name']) ?> (<?= e(roleLabel($u['role'])) ?>)</option>
                         <?php endforeach; ?>
                     </select>
                 </div>
