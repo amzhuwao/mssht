@@ -42,6 +42,8 @@ if (!defined('APP_URL')) {
 
 define('UPLOAD_PATH', APP_ROOT . '/uploads');
 define('UPLOAD_URL', APP_URL . '/uploads');
+define('BACKUP_PATH', APP_ROOT . '/backups');
+define('BACKUP_URL', APP_URL . '/backups');
 
 define('SESSION_LIFETIME', 3600 * 8); // 8 hours
 

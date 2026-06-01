@@ -154,6 +154,21 @@ For local development without SMTP, enable **fallback reset link on screen** in 
 
 Uploaded files are stored under `uploads/` (applications, assignments, proof-of-payment, etc.). The app creates subfolders on bootstrap. Ensure the web server can write to `uploads/`.
 
+### Database backup and restore
+
+Super admins can manage backups from **System Settings → Backup & Restore**. Backups are written as `.sql` files in `backups/`.
+
+CLI helpers are also available:
+
+```bash
+php tools/backup-database.php --name=manual-backup.sql
+php tools/restore-database.php backups/manual-backup.sql
+php tools/clear-seed-data.php
+```
+
+The restore command replaces the current application tables with the backup contents.
+The seed cleanup command removes the demo records so you can start capturing real data without reinstalling the schema.
+
 ### Production checklist
 
 - Set `APP_DEBUG` to `false` in `config/app.php`

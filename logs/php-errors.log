@@ -18,3 +18,13 @@
 [2026-05-28 17:16:56] SQLSTATE[42S22]: Column not found: 1054 Unknown column 'amount' in 'field list' in C:\xampp\htdocs\mssht\scripts\verify_seed.php:27
 #0 C:\xampp\htdocs\mssht\scripts\verify_seed.php(27): PDO->query('SELECT id, invo...')
 #1 {main}
+[2026-05-29 08:37:47] SQLSTATE[42S02]: Base table or view not found: 1146 Table 'mssht_db.users' doesn't exist in C:\xampp\htdocs\mssht\includes\auth.php:118
+#0 C:\xampp\htdocs\mssht\includes\auth.php(118): PDO->prepare('SELECT u.*, p.f...')
+#1 C:\xampp\htdocs\mssht\login.php(15): login('amzhuwao@gmail....', 'amzhuwao')
+#2 {main}
+[2026-06-01 11:25:38] SQLSTATE[42S22]: Column not found: 1054 Unknown column 'first_name' in 'field list' in C:\xampp\htdocs\mssht\tools\check_seed_results.php:46
+#0 C:\xampp\htdocs\mssht\tools\check_seed_results.php(46): PDO->query('SELECT `id`, `s...')
+#1 {main}
+[2026-06-01 11:40:19] tableExists(): Argument #2 ($table) must be of type string, int given, called in C:\xampp\htdocs\mssht\tools\check_seed_results.php on line 36 in C:\xampp\htdocs\mssht\tools\check_seed_results.php:24
+#0 C:\xampp\htdocs\mssht\tools\check_seed_results.php(36): tableExists(Object(PDO), 0)
+#1 {main}

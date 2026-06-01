@@ -151,6 +151,14 @@ require_once __DIR__ . '/../../includes/header.php';
     </div>
 </div>
 
+<div class="card" style="margin-top:1.5rem;">
+    <div class="card-header"><h2>Backup & Restore</h2></div>
+    <div class="card-body">
+        <p class="text-muted">Create SQL backups and restore them from the admin panel.</p>
+        <a href="<?= moduleUrl('settings', 'backup') ?>" class="btn btn-primary">Open Backup Tools</a>
+    </div>
+</div>
+
 <script>
 document.getElementById('mailDriver')?.addEventListener('change', function () {
     document.getElementById('smtpFields').style.display = this.value === 'smtp' ? '' : 'none';

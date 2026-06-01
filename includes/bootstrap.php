@@ -15,6 +15,7 @@ require_once __DIR__ . '/rubric.php';
 require_once __DIR__ . '/guardian.php';
 require_once __DIR__ . '/pdf.php';
 require_once __DIR__ . '/finance.php';
+require_once __DIR__ . '/backup.php';
 
 // Redirect students who must change their temporary password
 if (isLoggedIn()) {
@@ -41,4 +42,8 @@ foreach ($uploadDirs as $dir) {
     if (!is_dir($path)) {
         mkdir($path, 0755, true);
     }
+}
+
+if (!is_dir(BACKUP_PATH)) {
+    mkdir(BACKUP_PATH, 0755, true);
 }

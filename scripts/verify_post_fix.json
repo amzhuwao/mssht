@@ -1,0 +1,81 @@
+{
+    "db": "mssht_db",
+    "students": 120,
+    "classes": 8,
+    "invoices": 120,
+    "payments": 60,
+    "sample_students": [
+        {
+            "id": 1202,
+            "student_number": "SEED-STU-2026-001",
+            "user_id": 1212,
+            "program_id": 1,
+            "intake_id": 1,
+            "enrollment_status": "active"
+        },
+        {
+            "id": 1203,
+            "student_number": "SEED-STU-2026-002",
+            "user_id": 1213,
+            "program_id": 1,
+            "intake_id": 1,
+            "enrollment_status": "active"
+        },
+        {
+            "id": 1204,
+            "student_number": "SEED-STU-2026-003",
+            "user_id": 1214,
+            "program_id": 1,
+            "intake_id": 1,
+            "enrollment_status": "active"
+        },
+        {
+            "id": 1205,
+            "student_number": "SEED-STU-2026-004",
+            "user_id": 1215,
+            "program_id": 1,
+            "intake_id": 1,
+            "enrollment_status": "active"
+        },
+        {
+            "id": 1206,
+            "student_number": "SEED-STU-2026-005",
+            "user_id": 1216,
+            "program_id": 1,
+            "intake_id": 1,
+            "enrollment_status": "active"
+        }
+    ],
+    "sample_invoices": [
+        {
+            "id": 121,
+            "invoice_number": "SEED-INV-0001",
+            "student_id": 1202,
+            "status": "partial"
+        },
+        {
+            "id": 122,
+            "invoice_number": "SEED-INV-0002",
+            "student_id": 1203,
+            "status": "pending"
+        },
+        {
+            "id": 123,
+            "invoice_number": "SEED-INV-0003",
+            "student_id": 1204,
+            "status": "partial"
+        },
+        {
+            "id": 124,
+            "invoice_number": "SEED-INV-0004",
+            "student_id": 1205,
+            "status": "pending"
+        },
+        {
+            "id": 125,
+            "invoice_number": "SEED-INV-0005",
+            "student_id": 1206,
+            "status": "partial"
+        }
+    ]
+}
