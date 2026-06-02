@@ -28,3 +28,12 @@
 [2026-06-01 11:40:19] tableExists(): Argument #2 ($table) must be of type string, int given, called in C:\xampp\htdocs\mssht\tools\check_seed_results.php on line 36 in C:\xampp\htdocs\mssht\tools\check_seed_results.php:24
 #0 C:\xampp\htdocs\mssht\tools\check_seed_results.php(36): tableExists(Object(PDO), 0)
 #1 {main}
+[2026-06-02 16:00:42] SQLSTATE[23000]: Integrity constraint violation: 1062 Duplicate entry '8-549/23/M06' for key 'uk_program_module' in C:\xampp\htdocs\mssht\modules\programs\modules.php:17
+#0 C:\xampp\htdocs\mssht\modules\programs\modules.php(17): PDOStatement->execute(Array)
+#1 {main}
+[2026-06-02 16:04:25] SQLSTATE[23000]: Integrity constraint violation: 1062 Duplicate entry '8-549/23/M05' for key 'uk_program_module' in C:\xampp\htdocs\mssht\modules\programs\modules.php:17
+#0 C:\xampp\htdocs\mssht\modules\programs\modules.php(17): PDOStatement->execute(Array)
+#1 {main}
+[2026-06-02 16:09:38] SQLSTATE[HY000]: General error: 1005 Can't create table `mssht_db`.`program_modules` (errno: 150 "Foreign key constraint is incorrectly formed") in C:\xampp\htdocs\mssht\tools\migrate_programs_modules_pivot.php:7
+#0 C:\xampp\htdocs\mssht\tools\migrate_programs_modules_pivot.php(7): PDO->exec('CREATE TABLE IF...')
+#1 {main}

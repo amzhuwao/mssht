@@ -63,6 +63,8 @@ CREATE TABLE programs (
     name VARCHAR(200) NOT NULL,
     program_type ENUM('short_course', 'certificate', 'diploma', 'hnd') NOT NULL,
     duration_months SMALLINT UNSIGNED DEFAULT 12,
+    duration_value SMALLINT UNSIGNED DEFAULT 12,
+    duration_unit VARCHAR(10) DEFAULT 'months',
     total_credits DECIMAL(6,2) DEFAULT 0,
     description TEXT NULL,
     status ENUM('active', 'inactive') DEFAULT 'active',
