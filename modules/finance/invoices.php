@@ -10,18 +10,58 @@ $db = getDB();
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && verifyCsrf($_POST['csrf'] ?? '')) {
     $action = $_POST['action'] ?? '';
     if ($action === 'create') {
+        $lineDescriptions = $_POST['line_description'] ?? [];
+        $lineQuantities = $_POST['line_quantity'] ?? [];
+        $lineUnitAmounts = $_POST['line_unit_amount'] ?? [];
+        $lineFeeTypes = $_POST['line_fee_type'] ?? [];
+        $lines = [];
+        $errors = [];
+
+        $rowCount = max(count((array) $lineDescriptions), count((array) $lineQuantities), count((array) $lineUnitAmounts));
+        for ($i = 0; $i < $rowCount; $i++) {
+            $description = trim((string) ($lineDescriptions[$i] ?? ''));
+            $quantity = (float) ($lineQuantities[$i] ?? 0);
+            $unitAmount = (float) ($lineUnitAmounts[$i] ?? 0);
+            $feeType = trim((string) ($lineFeeTypes[$i] ?? ''));
+
+            if ($description === '' && $quantity <= 0 && $unitAmount <= 0) {
+                continue;
+            }
+
+            if ($description === '') {
+                $errors[] = 'Each invoice item must have a description.';
+            }
+            if ($quantity <= 0) {
+                $errors[] = 'Each invoice item must have a quantity greater than zero.';
+            }
+            if ($unitAmount < 0) {
+                $errors[] = 'Each invoice item must have a valid unit amount.';
+            }
+
+            $lines[] = [
+                'description' => $description,
+                'quantity' => $quantity,
+                'unit_amount' => $unitAmount,
+                'line_total' => round($quantity * $unitAmount, 2),
+                'fee_type' => $feeType !== '' ? $feeType : null,
+            ];
+        }
+
+        if (!$lines) {
+            $errors[] = 'Add at least one invoice item.';
+        }
+
+        if ($errors) {
+            flash('danger', implode(' ', array_unique($errors)));
+            redirect(moduleUrl('finance', 'invoices'));
+        }
+
         createInvoice([
             'student_id' => (int) $_POST['student_id'],
-            'total_amount' => (float) $_POST['amount'],
             'currency' => $_POST['currency'] ?? 'USD',
             'due_date' => $_POST['due_date'],
             'notes' => trim($_POST['notes'] ?? ''),
-        ], [[
-            'description' => trim($_POST['description'] ?? 'Fees'),
-            'quantity' => 1,
-            'unit_amount' => (float) $_POST['amount'],
-            'line_total' => (float) $_POST['amount'],
-        ]]);
+        ], $lines);
         flash('success', 'Invoice created.');
     }
     if ($action === 'bulk' && (int) $_POST['intake_id'] && (int) $_POST['fee_structure_id']) {
@@ -63,11 +103,16 @@ require __DIR__ . '/../../includes/finance-nav.php';
                 <div class="form-group"><label>Student</label><select name="student_id" id="studentSelect" required>
                     <option value="">Select</option><?php foreach ($students as $s): ?><option value="<?= (int) $s['id'] ?>"><?= e(trim($s['student_number'] . ' — ' . trim(($s['first_name'] ?? '') . ' ' . ($s['last_name'] ?? '')))) ?></option><?php endforeach; ?>
                 </select></div>
-                <div class="form-row">
-                    <div class="form-group"><label>Description</label><input name="description" value="Tuition fees"></div>
-                    <div class="form-group"><label>Amount</label><input type="number" step="0.01" name="amount" required></div>
-                    <div class="form-group"><label>Currency</label><select name="currency"><option value="USD">USD</option><option value="ZWL">ZWL</option></select></div>
-                    <div class="form-group"><label>Due date</label><input type="date" name="due_date" required value="<?= date('Y-m-d', strtotime('+30 days')) ?>"></div>
+                <div class="form-group"><label>Currency</label><select name="currency"><option value="USD">USD</option><option value="ZWL">ZWL</option></select></div>
+                <div class="form-group"><label>Due date</label><input type="date" name="due_date" required value="<?= date('Y-m-d', strtotime('+30 days')) ?>"></div>
+                <div class="form-group" style="margin-top:1rem;">
+                    <label>Invoice items</label>
+                    <div id="invoiceLines"></div>
+                    <button type="button" class="btn btn-sm btn-outline" id="addInvoiceLine" style="margin-top:8px;">+ Add item</button>
+                </div>
+                <div class="form-group" style="margin-top:1rem;">
+                    <label>Total</label>
+                    <div id="invoiceTotal" style="font-size:1.1rem;font-weight:700;">USD 0.00</div>
                 </div>
                 <button type="submit" class="btn btn-primary">Create invoice</button>
             </form>
@@ -170,6 +215,64 @@ require __DIR__ . '/../../includes/finance-nav.php';
     filterSelect('studentSearch', 'studentSelect');
     filterSelect('intakeSearch', 'intakeSelect');
     filterSelect('feeStructureSearch', 'feeStructureSelect');
+
+    const linesWrap = document.getElementById('invoiceLines');
+    const addLineBtn = document.getElementById('addInvoiceLine');
+    const totalEl = document.getElementById('invoiceTotal');
+    const currencySelect = document.querySelector('select[name="currency"]');
+
+    function lineTemplate(index) {
+        return `
+            <div class="invoice-line" data-line="${index}" style="display:grid;grid-template-columns:2fr 1fr 1fr auto;gap:10px;align-items:end;margin-bottom:10px;">
+                <div class="form-group" style="margin:0;"><label>Description</label><input name="line_description[]" placeholder="Tuition fees" required></div>
+                <div class="form-group" style="margin:0;"><label>Qty</label><input type="number" step="0.01" min="0.01" name="line_quantity[]" value="1" required></div>
+                <div class="form-group" style="margin:0;"><label>Unit amount</label><input type="number" step="0.01" min="0" name="line_unit_amount[]" value="0.00" required></div>
+                <div><button type="button" class="btn btn-sm btn-outline js-remove-line">Remove</button></div>
+            </div>
+        `;
+    }
+
+    function recalcTotal() {
+        let total = 0;
+        linesWrap.querySelectorAll('.invoice-line').forEach(function (row) {
+            const qty = parseFloat(row.querySelector('input[name="line_quantity[]"]').value || '0');
+            const unit = parseFloat(row.querySelector('input[name="line_unit_amount[]"]').value || '0');
+            total += (isNaN(qty) ? 0 : qty) * (isNaN(unit) ? 0 : unit);
+        });
+        const currency = currencySelect ? currencySelect.value : 'USD';
+        totalEl.textContent = currency + ' ' + total.toFixed(2);
+    }
+
+    function addLine() {
+        const index = linesWrap.querySelectorAll('.invoice-line').length;
+        const wrapper = document.createElement('div');
+        wrapper.innerHTML = lineTemplate(index);
+        linesWrap.appendChild(wrapper.firstElementChild);
+        recalcTotal();
+    }
+
+    if (addLineBtn && linesWrap) {
+        addLineBtn.addEventListener('click', addLine);
+        linesWrap.addEventListener('input', function (e) {
+            if (e.target && (e.target.name === 'line_quantity[]' || e.target.name === 'line_unit_amount[]')) {
+                recalcTotal();
+            }
+        });
+        linesWrap.addEventListener('click', function (e) {
+            const btn = e.target.closest && e.target.closest('.js-remove-line');
+            if (!btn) return;
+            const row = btn.closest('.invoice-line');
+            if (row) row.remove();
+            if (!linesWrap.querySelector('.invoice-line')) {
+                addLine();
+            }
+            recalcTotal();
+        });
+        if (currencySelect) {
+            currencySelect.addEventListener('change', recalcTotal);
+        }
+        addLine();
+    }
 })();
 </script>
 

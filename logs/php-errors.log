@@ -37,3 +37,12 @@
 [2026-06-02 16:09:38] SQLSTATE[HY000]: General error: 1005 Can't create table `mssht_db`.`program_modules` (errno: 150 "Foreign key constraint is incorrectly formed") in C:\xampp\htdocs\mssht\tools\migrate_programs_modules_pivot.php:7
 #0 C:\xampp\htdocs\mssht\tools\migrate_programs_modules_pivot.php(7): PDO->exec('CREATE TABLE IF...')
 #1 {main}
+[2026-06-04 11:22:15] SQLSTATE[23000]: Integrity constraint violation: 1062 Duplicate entry '8-549/23/M06' for key 'uk_program_module' in C:\xampp\htdocs\mssht\modules\programs\modules.php:92
+#0 C:\xampp\htdocs\mssht\modules\programs\modules.php(92): PDOStatement->execute(Array)
+#1 {main}
+[2026-06-04 11:23:42] SQLSTATE[23000]: Integrity constraint violation: 1062 Duplicate entry '8-549/23/M06' for key 'uk_program_module' in C:\xampp\htdocs\mssht\modules\programs\modules.php:92
+#0 C:\xampp\htdocs\mssht\modules\programs\modules.php(92): PDOStatement->execute(Array)
+#1 {main}
+[2026-06-04 13:19:51] SQLSTATE[23000]: Integrity constraint violation: 1062 Duplicate entry '9-372/25/M05' for key 'uk_program_module' in C:\xampp\htdocs\mssht\modules\programs\modules.php:92
+#0 C:\xampp\htdocs\mssht\modules\programs\modules.php(92): PDOStatement->execute(Array)
+#1 {main}
