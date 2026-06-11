@@ -97,28 +97,57 @@ if (isset($_GET['ajax']) && $_GET['ajax'] === '1' && isset($_GET['action']) && $
     $moduleId = (int)($_GET['module_id'] ?? 0);
     $sem = max(1, (int)($_GET['semester'] ?? 1));
     if (!$moduleId) { echo json_encode(['success' => false, 'error' => 'Invalid module id']); exit; }
-    $stmt = $db->prepare('SELECT pm.*, m.code, m.name, m.duration_value, m.duration_unit FROM program_modules pm JOIN modules m ON m.id = pm.module_id WHERE pm.program_id = ? AND pm.module_id = ? AND pm.semester = ? LIMIT 1');
+    $stmt = $db->prepare('SELECT pm.*, m.code, m.name, m.duration_value, m.duration_unit, m.semester AS module_semester, m.is_core AS module_is_core FROM program_modules pm JOIN modules m ON m.id = pm.module_id WHERE pm.program_id = ? AND pm.module_id = ? AND pm.semester = ? LIMIT 1');
     $stmt->execute([$programId, $moduleId, $sem]);
     $row = $stmt->fetch(PDO::FETCH_ASSOC);
     if (!$row) { echo json_encode(['success' => false, 'error' => 'Attachment not found']); exit; }
     echo json_encode(['success' => true, 'attachment' => $row]); exit;
 }
 
-// AJAX: update attachment details
+// AJAX: update attachment details + module master fields
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['ajax']) && ($_POST['action'] ?? '') === 'update_attachment') {
     header('Content-Type: application/json');
     if (!verifyCsrf($_POST['csrf'] ?? '')) { echo json_encode(['success' => false, 'error' => 'Invalid CSRF']); exit; }
     $moduleId = (int)($_POST['module_id'] ?? 0);
-    $sem = max(1, (int)($_POST['semester'] ?? 1));
-    $isCore = isset($_POST['is_core']) ? 1 : 0;
+    $oldSem = max(1, (int)($_POST['old_semester'] ?? 1));
+    $newSem = max(1, (int)($_POST['attachment_semester'] ?? $oldSem));
+    $pivotIsCore = isset($_POST['pivot_is_core']) ? 1 : 0;
     $notes = trim($_POST['notes'] ?? '');
     $order = (int)($_POST['display_order'] ?? 0);
+    // module master fields
+    $code = trim($_POST['code'] ?? '');
+    $name = trim($_POST['name'] ?? '');
+    $durationValue = (int)($_POST['duration_value'] ?? 0);
+    $durationUnit = in_array($_POST['duration_unit'] ?? 'hours', ['hours','weeks','days'], true) ? $_POST['duration_unit'] : 'hours';
+    $moduleSemester = max(1, (int)($_POST['module_semester'] ?? 1));
+    $moduleIsCore = isset($_POST['module_is_core']) ? 1 : 0;
     if (!$moduleId) { echo json_encode(['success' => false, 'error' => 'Invalid module id']); exit; }
+    // basic validation
+    if ($code === '' || $name === '') { echo json_encode(['success' => false, 'error' => 'Code and name are required']); exit; }
     try {
-        $stmt = $db->prepare('UPDATE program_modules SET is_core = ?, notes = ?, display_order = ? WHERE program_id = ? AND module_id = ? AND semester = ?');
-        $stmt->execute([$isCore, $notes !== '' ? $notes : null, $order, $programId, $moduleId, $sem]);
-        echo json_encode(['success' => true]);
+        $db->beginTransaction();
+        // update module master
+        $stmt = $db->prepare('UPDATE modules SET code = ?, name = ?, duration_value = ?, duration_unit = ?, semester = ?, is_core = ? WHERE id = ?');
+        $stmt->execute([strtoupper($code), $name, $durationValue, $durationUnit, $moduleSemester, $moduleIsCore, $moduleId]);
+        // update pivot fields: if semester changed handle carefully
+        if ($newSem !== $oldSem) {
+            // ensure target doesn't exist
+            $chk = $db->prepare('SELECT 1 FROM program_modules WHERE program_id = ? AND module_id = ? AND semester = ?');
+            $chk->execute([$programId, $moduleId, $newSem]);
+            if ($chk->fetchColumn()) {
+                $db->rollBack();
+                echo json_encode(['success' => false, 'error' => 'An attachment for this module already exists in the target semester']); exit;
+            }
+            $u = $db->prepare('UPDATE program_modules SET semester = ?, is_core = ?, notes = ?, display_order = ? WHERE program_id = ? AND module_id = ? AND semester = ?');
+            $u->execute([$newSem, $pivotIsCore, $notes !== '' ? $notes : null, $order, $programId, $moduleId, $oldSem]);
+        } else {
+            $u = $db->prepare('UPDATE program_modules SET is_core = ?, notes = ?, display_order = ? WHERE program_id = ? AND module_id = ? AND semester = ?');
+            $u->execute([$pivotIsCore, $notes !== '' ? $notes : null, $order, $programId, $moduleId, $oldSem]);
+        }
+        $db->commit();
+        echo json_encode(['success' => true, 'new_semester' => $newSem]);
     } catch (Exception $e) {
+        $db->rollBack();
         echo json_encode(['success' => false, 'error' => $e->getMessage()]);
     }
     exit;
@@ -397,12 +426,24 @@ document.querySelector('.data-table tbody').addEventListener('click', function (
 
 // modal DOM
 var modalHtml = '<div id="attachmentModal" style="position:fixed;left:0;top:0;right:0;bottom:0;background:rgba(0,0,0,0.4);display:none;align-items:center;justify-content:center;z-index:10000;">'
-    + '<div style="background:#fff;padding:18px;border-radius:8px;max-width:560px;width:100%;">'
-    + '<h3 id="attachmentModalTitle">Edit Attachment</h3>'
-    + '<input type="hidden" id="att_module_id"><input type="hidden" id="att_semester">'
-    + '<div style="margin-top:8px;"><label><input type="checkbox" id="att_is_core"> Core</label></div>'
-    + '<div style="margin-top:8px;"><label>Display order</label><input type="number" id="att_display_order" value="0" style="width:120px;"></div>'
-    + '<div style="margin-top:8px;"><label>Notes</label><textarea id="att_notes" style="width:100%;height:100px;"></textarea></div>'
+    + '<div style="background:#fff;padding:18px;border-radius:8px;max-width:720px;width:100%;">'
+    + '<h3 id="attachmentModalTitle">Edit Module & Attachment</h3>'
+    + '<input type="hidden" id="att_module_id"><input type="hidden" id="att_old_semester">'
+    + '<div style="display:flex;gap:12px;flex-wrap:wrap;">'
+    + '<div style="flex:1;min-width:220px;"><label>Code</label><input type="text" id="att_code" style="width:100%;"></div>'
+    + '<div style="flex:2;min-width:220px;"><label>Name</label><input type="text" id="att_name" style="width:100%;"></div>'
+    + '<div style="min-width:140px;"><label>Duration</label><div style="display:flex;gap:8px;align-items:center;"><input type="number" id="att_duration_value" value="0" style="width:80px;"><select id="att_duration_unit"><option value="hours">hours</option><option value="weeks">weeks</option><option value="days">days</option></select></div></div>'
+    + '<div style="min-width:120px;"><label>Module semester</label><input type="number" id="att_module_semester" value="1" min="1" style="width:100px;"></div>'
+    + '<div style="min-width:160px;"><label>Attachment semester</label><select id="att_attachment_semester">';
+for (var i=1;i<=12;i++){ modalHtml += '<option value="'+i+'">Semester '+i+'</option>'; }
+modalHtml += '</select></div>'
+    + '</div>'
+    + '<div style="margin-top:8px;display:flex;gap:12px;">'
+    + '<div><label><input type="checkbox" id="att_module_is_core"> Module is core</label></div>'
+    + '<div><label><input type="checkbox" id="att_pivot_is_core"> Attachment is core</label></div>'
+    + '<div style="flex:1;"><label>Display order</label><input type="number" id="att_display_order" value="0" style="width:120px;"></div>'
+    + '</div>'
+    + '<div style="margin-top:8px;"><label>Notes</label><textarea id="att_notes" style="width:100%;height:90px;"></textarea></div>'
     + '<div style="margin-top:12px;text-align:right;display:flex;gap:8px;justify-content:flex-end;">'
     + '<button id="att_cancel" class="btn btn-sm">Cancel</button>'
     + '<button id="att_save" class="btn btn-sm btn-primary">Save</button>'
@@ -410,21 +451,37 @@ var modalHtml = '<div id="attachmentModal" style="position:fixed;left:0;top:0;ri
 document.body.insertAdjacentHTML('beforeend', modalHtml);
 var attachmentModal = document.getElementById('attachmentModal');
 var att_module_id = document.getElementById('att_module_id');
-var att_semester = document.getElementById('att_semester');
-var att_is_core = document.getElementById('att_is_core');
+var att_old_semester = document.getElementById('att_old_semester');
+var att_code = document.getElementById('att_code');
+var att_name = document.getElementById('att_name');
+var att_duration_value = document.getElementById('att_duration_value');
+var att_duration_unit = document.getElementById('att_duration_unit');
+var att_module_semester = document.getElementById('att_module_semester');
+var att_attachment_semester = document.getElementById('att_attachment_semester');
+var att_module_is_core = document.getElementById('att_module_is_core');
+var att_pivot_is_core = document.getElementById('att_pivot_is_core');
 var att_display_order = document.getElementById('att_display_order');
 var att_notes = document.getElementById('att_notes');
 var att_cancel = document.getElementById('att_cancel');
 var att_save = document.getElementById('att_save');
 
 function openEditAttachmentModal(moduleId, sem, tr) {
-    att_module_id.value = moduleId; att_semester.value = sem;
+    att_module_id.value = moduleId; att_old_semester.value = sem;
     // load data
     fetch(ajaxBaseUrl + '&ajax=1&action=get_attachment&module_id=' + encodeURIComponent(moduleId) + '&semester=' + encodeURIComponent(sem))
         .then(function(r){ return r.json(); }).then(function(data){
             if (!data.success) { showToast(data.error || 'Failed to load', 'danger'); return; }
             var a = data.attachment;
-            att_is_core.checked = a.is_core == 1 || a.is_core === '1';
+            att_module_id.value = a.module_id || a.moduleId || moduleId;
+            att_old_semester.value = a.semester || a.program_semester || sem;
+            att_code.value = a.code || '';
+            att_name.value = a.name || '';
+            att_duration_value.value = a.duration_value || 0;
+            att_duration_unit.value = a.duration_unit || 'hours';
+            att_module_semester.value = a.module_semester || a.semester || 1;
+            att_attachment_semester.value = a.semester || a.program_semester || sem;
+            att_module_is_core.checked = a.module_is_core == 1 || a.module_is_core === '1';
+            att_pivot_is_core.checked = a.is_core == 1 || a.is_core === '1';
             att_display_order.value = a.display_order || 0;
             att_notes.value = a.notes || '';
             attachmentModal.style.display = 'flex';
@@ -433,14 +490,44 @@ function openEditAttachmentModal(moduleId, sem, tr) {
 
 att_cancel.addEventListener('click', function(){ attachmentModal.style.display = 'none'; });
 att_save.addEventListener('click', function(){
-    var fd = new FormData(); fd.append('ajax','1'); fd.append('action','update_attachment'); fd.append('module_id', att_module_id.value); fd.append('semester', att_semester.value);
-    if (att_is_core.checked) fd.append('is_core','1'); fd.append('display_order', att_display_order.value); fd.append('notes', att_notes.value); fd.append('csrf','<?= csrfToken() ?>');
+    var fd = new FormData(); fd.append('ajax','1'); fd.append('action','update_attachment'); fd.append('module_id', att_module_id.value);
+    fd.append('old_semester', att_old_semester.value);
+    fd.append('attachment_semester', att_attachment_semester.value);
+    if (att_pivot_is_core.checked) fd.append('pivot_is_core','1');
+    fd.append('display_order', att_display_order.value);
+    fd.append('notes', att_notes.value);
+    // module master fields
+    fd.append('code', att_code.value);
+    fd.append('name', att_name.value);
+    fd.append('duration_value', att_duration_value.value);
+    fd.append('duration_unit', att_duration_unit.value);
+    fd.append('module_semester', att_module_semester.value);
+    if (att_module_is_core.checked) fd.append('module_is_core','1');
+    fd.append('csrf','<?= csrfToken() ?>');
     att_save.disabled = true;
-    fetch(ajaxBaseUrl, { method: 'POST', body: fd }).then(function(r){ return r.json(); }).then(function(data){ att_save.disabled = false; if (!data.success) { showToast(data.error || 'Failed to save', 'danger'); return; } attachmentModal.style.display = 'none';
-        // update row display
-        var tr = document.querySelector('tr[data-module-id="' + att_module_id.value + '"][data-semester="' + att_semester.value + '"]');
-        if (tr) { tr.querySelector('.col-core').textContent = att_is_core.checked ? 'Yes' : 'No'; }
-        showToast('Attachment updated', 'success');
+    fetch(ajaxBaseUrl, { method: 'POST', body: fd }).then(function(r){ return r.json(); }).then(function(data){ att_save.disabled = false; if (!data.success) { showToast(data.error || 'Failed to save', 'danger'); return; }
+        attachmentModal.style.display = 'none';
+        // update row display: use new attachment semester if changed
+        var selector = 'tr[data-module-id="' + att_module_id.value + '"][data-semester="' + att_old_semester.value + '"]';
+        var tr = document.querySelector(selector);
+        if (tr) {
+            tr.setAttribute('data-semester', data.new_semester || att_attachment_semester.value);
+            tr.querySelector('td:nth-child(1)').textContent = att_code.value;
+            tr.querySelector('td:nth-child(2)').textContent = att_name.value;
+            tr.querySelector('td:nth-child(3)').textContent = (att_duration_value.value || 0) + ' ' + (att_duration_unit.value || 'hours');
+            tr.querySelector('td:nth-child(4)').textContent = data.new_semester || att_attachment_semester.value;
+            tr.querySelector('.col-core').textContent = att_pivot_is_core.checked ? 'Yes' : 'No';
+        } else {
+            // if row not found (semester changed selector), try to find by module id and update
+            var tr2 = document.querySelector('tr[data-module-id="' + att_module_id.value + '"]'); if (tr2) {
+                tr2.querySelector('td:nth-child(1)').textContent = att_code.value;
+                tr2.querySelector('td:nth-child(2)').textContent = att_name.value;
+                tr2.querySelector('td:nth-child(3)').textContent = (att_duration_value.value || 0) + ' ' + (att_duration_unit.value || 'hours');
+                tr2.querySelector('td:nth-child(4)').textContent = data.new_semester || att_attachment_semester.value;
+                tr2.querySelector('.col-core').textContent = att_pivot_is_core.checked ? 'Yes' : 'No';
+            }
+        }
+        showToast('Module and attachment updated', 'success');
     }).catch(function(){ att_save.disabled = false; showToast('Request failed', 'danger'); });
 });
 </script>

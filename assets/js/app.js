@@ -96,6 +96,19 @@
                 $select.val(currentValue);
             }
         });
+
+        // Keep the search input in sync when the select value changes (user picks an option)
+        $select.on('change', function () {
+            var selText = $select.find('option:selected').text() || '';
+            $search.val($.trim(selText));
+            $search.trigger('input');
+        });
+
+        // Initialize search box with currently selected option (if any)
+        var initial = $select.find('option:selected').text() || '';
+        if (initial) {
+            $search.val($.trim(initial));
+        }
     };
 
     // Application status update

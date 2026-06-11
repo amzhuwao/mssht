@@ -71,6 +71,15 @@ CREATE TABLE programs (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB;
 
+CREATE TABLE program_intakes (
+    program_id INT UNSIGNED NOT NULL,
+    intake_id INT UNSIGNED NOT NULL,
+    PRIMARY KEY (program_id, intake_id),
+    INDEX (intake_id),
+    FOREIGN KEY (program_id) REFERENCES programs(id) ON DELETE CASCADE,
+    FOREIGN KEY (intake_id) REFERENCES intakes(id) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
 CREATE TABLE intakes (
     id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(100) NOT NULL,

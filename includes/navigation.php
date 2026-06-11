@@ -3,6 +3,7 @@ $navItems = [
     'dashboard'  => ['label' => 'Dashboard', 'icon' => 'grid', 'url' => url('dashboard.php')],
     'admissions' => ['label' => 'Admissions', 'icon' => 'user-plus', 'url' => moduleUrl('admissions')],
     'programs'   => ['label' => 'Programs & Courses', 'icon' => 'book', 'url' => moduleUrl('programs')],
+    'intakes'    => ['label' => 'Intakes', 'icon' => 'calendar', 'url' => moduleUrl('intakes')],
     'students'   => ['label' => 'Students (SIS)', 'icon' => 'users', 'url' => moduleUrl('students')],
     'timetable'  => ['label' => 'Timetabling', 'icon' => 'calendar', 'url' => moduleUrl('timetable')],
     'classes'    => ['label' => 'My Classes', 'icon' => 'monitor', 'url' => moduleUrl('classes')],
