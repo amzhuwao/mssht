@@ -9,7 +9,7 @@ $db = getDB();
 $staff = $db->query(
     'SELECT s.*, u.email, p.first_name, p.last_name
      FROM staff s JOIN users u ON u.id = s.user_id
-     JOIN user_profiles p ON p.user_id = u.id ORDER BY s.hire_date DESC'
+    LEFT JOIN user_profiles p ON p.user_id = u.id ORDER BY s.hire_date DESC'
 )->fetchAll();
 
 require_once __DIR__ . '/../../includes/header.php';
@@ -27,7 +27,7 @@ require_once __DIR__ . '/../../includes/header.php';
             <?php foreach ($staff as $s): ?>
             <tr>
                 <td><?= e($s['staff_number']) ?></td>
-                <td><?= e($s['first_name'] . ' ' . $s['last_name']) ?></td>
+                <td><?= e(trim(($s['first_name'] ?? '') . ' ' . ($s['last_name'] ?? '')) ?: '—') ?></td>
                 <td><?= e($s['email']) ?></td>
                 <td><?= e($s['department'] ?? '—') ?></td>
                 <td><?= e($s['position'] ?? '—') ?></td>
