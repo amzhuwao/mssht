@@ -163,6 +163,8 @@ function createApplicantPortalAccount(int $applicationId): ?array
         $db->prepare('UPDATE applications SET user_id = ? WHERE id = ?')->execute([$userId, $applicationId]);
     }
 
+    $db->prepare('UPDATE applications SET email = ? WHERE id = ?')->execute([$email, $applicationId]);
+
     auditLog('applicant_portal_created', 'application', $applicationId);
 
     return [

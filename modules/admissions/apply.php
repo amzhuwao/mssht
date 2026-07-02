@@ -251,7 +251,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         </div>
     </div>
     <?php else: ?>
-    <form method="post" enctype="multipart/form-data" class="card">
+    <form method="post" enctype="multipart/form-data" class="card" id="applicationForm">
         <div class="card-body">
             <input type="hidden" name="csrf" value="<?= csrfToken() ?>">
             <h3 style="margin-bottom:1rem;">Program Selection</h3>
@@ -312,8 +312,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             </div>
             <div class="form-row">
                 <div class="form-group">
-                    <label>Email *</label>
-                    <input type="email" name="email">
+                    <label>Email</label>
+                    <input type="email" name="email" id="applicationEmail" placeholder="Leave blank to use a system-generated email">
+                    <small class="text-muted">You can enter your own email, or leave this blank and you will be prompted to accept a system-generated email for registration.</small>
                 </div>
                 <div class="form-group">
                     <label>Telephone</label>
@@ -511,6 +512,46 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <script>
 msshtSearchableSelect('applyProgramSearch', 'applyProgramSelect');
 msshtSearchableSelect('applyIntakeSearch', 'applyIntakeSelect');
+
+(function () {
+    var form = document.getElementById('applicationForm');
+    var emailInput = document.getElementById('applicationEmail');
+
+    if (!form || !emailInput) {
+        return;
+    }
+
+    form.addEventListener('submit', function (event) {
+        if (form.dataset.emailPromptHandled === '1') {
+            return;
+        }
+
+        if (emailInput.value.trim() !== '') {
+            return;
+        }
+
+        event.preventDefault();
+
+        var enteredEmail = window.prompt(
+            'Enter an email address for this applicant account, or leave this blank and press OK to use a system-generated email for this registration.',
+            ''
+        );
+
+        if (enteredEmail === null) {
+            emailInput.focus();
+            return;
+        }
+
+        emailInput.value = enteredEmail.trim();
+        form.dataset.emailPromptHandled = '1';
+
+        if (typeof form.requestSubmit === 'function') {
+            form.requestSubmit();
+        } else {
+            form.submit();
+        }
+    });
+})();
 </script>
 
 </body>
