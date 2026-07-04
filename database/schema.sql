@@ -142,7 +142,7 @@ CREATE TABLE students (
     id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     user_id INT UNSIGNED NULL UNIQUE,
     student_number VARCHAR(30) NOT NULL UNIQUE,
-    application_id INT UNSIGNED NULL,
+    application_id INT UNSIGNED NULL UNIQUE,
     program_id INT UNSIGNED NOT NULL,
     intake_id INT UNSIGNED NOT NULL,
     enrollment_status ENUM('active', 'graduated', 'withdrawn', 'suspended', 'deferred') DEFAULT 'active',

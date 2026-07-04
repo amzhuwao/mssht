@@ -75,33 +75,52 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && verifyCsrf($_POST['csrf'] ?? '')) {
 
     $notesJson = json_encode($metaUpdate, JSON_UNESCAPED_UNICODE);
 
-    $db->prepare('UPDATE applications SET status = ?, notes = ?, reviewed_by = ?, reviewed_at = NOW() WHERE id = ?')
-       ->execute([$newStatus, $notesJson, $_SESSION['user_id'], $id]);
+    try {
+        $db->beginTransaction();
 
-    if ($newStatus === 'approved') {
-        $studentNum = generateStudentNumber();
-        $studentSql = !empty($app['user_id'])
-            ? 'INSERT INTO students (student_number, user_id, application_id, program_id, intake_id, enrollment_date) VALUES (?, ?, ?, ?, ?, CURDATE())'
-            : 'INSERT INTO students (student_number, application_id, program_id, intake_id, enrollment_date) VALUES (?, ?, ?, ?, CURDATE())';
-        $studentParams = !empty($app['user_id'])
-            ? [$studentNum, (int) $app['user_id'], $id, $app['program_id'], $app['intake_id']]
-            : [$studentNum, $id, $app['program_id'], $app['intake_id']];
-        $db->prepare($studentSql)->execute($studentParams);
-        $studentId = (int) $db->lastInsertId();
-        if (empty($app['user_id'])) {
-            $portal = createStudentPortalAccount($studentId);
-            $portalMsg = $portal
-                ? " Portal login — ID: {$portal['student_number']}, temp password: {$portal['temp_password']}"
-                : '';
-            flash('success', "Application approved. Student ID: $studentNum.$portalMsg");
+        $db->prepare('UPDATE applications SET status = ?, notes = ?, reviewed_by = ?, reviewed_at = NOW() WHERE id = ?')
+           ->execute([$newStatus, $notesJson, $_SESSION['user_id'], $id]);
+
+        if ($newStatus === 'approved') {
+            $existingStudent = $db->prepare('SELECT id, student_number FROM students WHERE application_id = ? LIMIT 1');
+            $existingStudent->execute([$id]);
+            $duplicateStudent = $existingStudent->fetch(PDO::FETCH_ASSOC);
+            if ($duplicateStudent) {
+                throw new RuntimeException('This application has already been converted to student record ' . $duplicateStudent['student_number'] . '.');
+            }
+
+            $studentNum = generateStudentNumber();
+            $studentSql = !empty($app['user_id'])
+                ? 'INSERT INTO students (student_number, user_id, application_id, program_id, intake_id, enrollment_date) VALUES (?, ?, ?, ?, ?, CURDATE())'
+                : 'INSERT INTO students (student_number, application_id, program_id, intake_id, enrollment_date) VALUES (?, ?, ?, ?, CURDATE())';
+            $studentParams = !empty($app['user_id'])
+                ? [$studentNum, (int) $app['user_id'], $id, $app['program_id'], $app['intake_id']]
+                : [$studentNum, $id, $app['program_id'], $app['intake_id']];
+            $db->prepare($studentSql)->execute($studentParams);
+            $studentId = (int) $db->lastInsertId();
+            if (empty($app['user_id'])) {
+                $portal = createStudentPortalAccount($studentId);
+                $portalMsg = $portal
+                    ? " Portal login — ID: {$portal['student_number']}, temp password: {$portal['temp_password']}"
+                    : '';
+                flash('success', "Application approved. Student ID: $studentNum.$portalMsg");
+            } else {
+                flash('success', "Application approved. Student ID: $studentNum. Existing portal account is now linked to the student record.");
+            }
         } else {
-            flash('success', "Application approved. Student ID: $studentNum. Existing portal account is now linked to the student record.");
+            flash('success', 'Application updated.');
         }
-    } else {
-        flash('success', 'Application updated.');
+
+        $db->commit();
+        auditLog('application_' . $newStatus, 'application', $id);
+        redirect(moduleUrl('admissions', 'review') . '?id=' . $id);
+    } catch (Throwable $e) {
+        if ($db->inTransaction()) {
+            $db->rollBack();
+        }
+        flash('danger', $e->getMessage() ?: 'Application update failed.');
+        redirect(moduleUrl('admissions', 'review') . '?id=' . $id);
     }
-    auditLog('application_' . $newStatus, 'application', $id);
-    redirect(moduleUrl('admissions', 'review') . '?id=' . $id);
 }
 
 $docs = $db->prepare('SELECT * FROM application_documents WHERE application_id = ?');
