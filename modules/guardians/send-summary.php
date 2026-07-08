@@ -12,7 +12,7 @@ if (!$studentId) {
 }
 
 $db = getDB();
-$stmt = $db->prepare('SELECT s.student_number, a.first_name, a.last_name FROM students s LEFT JOIN applications a ON a.id = s.application_id WHERE s.id = ?');
+$stmt = $db->prepare('SELECT s.student_number, COALESCE(s.first_name, up.first_name) AS first_name, COALESCE(s.last_name, up.last_name) AS last_name FROM students s LEFT JOIN users u ON u.id = s.user_id LEFT JOIN user_profiles up ON up.user_id = u.id WHERE s.id = ?');
 $stmt->execute([$studentId]);
 $student = $stmt->fetch();
 if (!$student) {

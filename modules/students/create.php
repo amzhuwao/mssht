@@ -186,8 +186,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && verifyCsrf($_POST['csrf'] ?? '')) {
                 $db->beginTransaction();
                 $studentNumber = $pr['student_number'] !== '' ? preg_replace('/[^A-Za-z0-9\-]/','',$pr['student_number']) : generateUniqueStudentNumberForRegistration($db);
                 $check = $db->prepare('SELECT id FROM students WHERE student_number = ?'); $check->execute([$studentNumber]); if ($check->fetch()) { throw new RuntimeException('Student number exists'); }
-                $stmt = $db->prepare('INSERT INTO students (student_number, program_id, intake_id, enrollment_status, enrollment_date) VALUES (?, ?, ?, ?, CURDATE())');
-                $stmt->execute([$studentNumber, $pr['program_id'], $pr['intake_id'], $pr['enrollment_status']]);
+                $stmt = $db->prepare('INSERT INTO students (student_number, first_name, last_name, email, phone, program_id, intake_id, enrollment_status, enrollment_date) VALUES (?, ?, ?, ?, ?, ?, ?, ?, CURDATE())');
+                $stmt->execute([$studentNumber, $pr['first_name'], $pr['last_name'], $pr['email'], $pr['phone'], $pr['program_id'], $pr['intake_id'], $pr['enrollment_status']]);
                 $studentId = (int)$db->lastInsertId();
                 if ($pr['create_portal']) {
                     $portal = createDirectStudentPortalAccount($studentId, $pr['first_name'], $pr['last_name'], $pr['email'], $pr['phone'], true);
@@ -259,10 +259,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && verifyCsrf($_POST['csrf'] ?? '')) {
             }
 
             $stmt = $db->prepare(
-                'INSERT INTO students (student_number, program_id, intake_id, enrollment_status, enrollment_date) VALUES (?, ?, ?, ?, CURDATE())'
+                'INSERT INTO students (student_number, first_name, last_name, email, phone, program_id, intake_id, enrollment_status, enrollment_date) VALUES (?, ?, ?, ?, ?, ?, ?, ?, CURDATE())'
             );
             $stmt->execute([
                 $studentNumber,
+                $submitted['first_name'],
+                $submitted['last_name'],
+                $submitted['email'],
+                $submitted['phone'],
                 $submitted['program_id'],
                 $submitted['intake_id'],
                 $submitted['enrollment_status'],

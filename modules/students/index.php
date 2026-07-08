@@ -8,12 +8,11 @@ $db = getDB();
 
 $students = $db->query(
     'SELECT s.*, p.name AS program_name, i.name AS intake_name,
-            COALESCE(a.first_name, up.first_name) AS first_name,
-            COALESCE(a.last_name, up.last_name) AS last_name
+            COALESCE(s.first_name, up.first_name) AS first_name,
+            COALESCE(s.last_name, up.last_name) AS last_name
      FROM students s
      JOIN programs p ON p.id = s.program_id
      JOIN intakes i ON i.id = s.intake_id
-     LEFT JOIN applications a ON a.id = s.application_id
      LEFT JOIN users u ON u.id = s.user_id
      LEFT JOIN user_profiles up ON up.user_id = u.id
      ORDER BY s.enrollment_date DESC LIMIT 100'

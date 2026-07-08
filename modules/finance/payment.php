@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__ . '/../../includes/bootstrap.php';
 requireModule('finance');
+requireFinanceManagement();
 
 $invoiceId = (int)($_GET['invoice_id'] ?? 0);
 $db = getDB();

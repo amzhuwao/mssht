@@ -34,6 +34,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && verifyCsrf($_POST['csrf'] ?? '') &&
         $hash = password_hash($pass, PASSWORD_DEFAULT);
         $db->prepare('UPDATE users SET password_hash = ?, must_change_password = 0 WHERE id = ?')->execute([$hash, $userId]);
         $db->prepare('UPDATE password_resets SET used_at = NOW() WHERE token = ?')->execute([$token]);
+        auditLog('password_reset', $isStudent ? 'student' : 'user', $userId);
         flash('success', 'Password updated. You can now sign in.');
         redirect($loginUrl);
     }

@@ -4,6 +4,7 @@ $sections = [
     'dashboard'    => ['label' => 'Overview', 'url' => moduleUrl('finance')],
     'fees'         => ['label' => 'Fee Structures', 'url' => moduleUrl('finance', 'fee-structures')],
     'invoices'     => ['label' => 'Invoicing', 'url' => moduleUrl('finance', 'invoices')],
+    'receipts'     => ['label' => 'Receipts', 'url' => moduleUrl('finance', 'receipts')],
     'receivables'  => ['label' => 'Receivables', 'url' => moduleUrl('finance', 'receivables')],
     'payables'     => ['label' => 'Payables', 'url' => moduleUrl('finance', 'payables')],
     'ledger'       => ['label' => 'General Ledger', 'url' => moduleUrl('finance', 'ledger')],

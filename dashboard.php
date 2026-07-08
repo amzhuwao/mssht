@@ -208,6 +208,9 @@ if (isStudentPortal()) {
                 <?php if (canAccessModule('finance')): ?>
                 <a href="<?= moduleUrl('finance') ?>" class="quick-link">Finance & Billing</a>
                 <?php endif; ?>
+                <?php if (canAccessModule('reports')): ?>
+                <a href="<?= moduleUrl('reports') ?>" class="quick-link">Reports & Analytics</a>
+                <?php endif; ?>
             </div>
         </div>
     </div>

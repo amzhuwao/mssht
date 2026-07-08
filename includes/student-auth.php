@@ -183,9 +183,11 @@ function createStudentPortalAccount(int $studentId, bool $resetPassword = false)
 {
     $db = getDB();
     $stmt = $db->prepare(
-        'SELECT s.*, a.first_name, a.last_name, a.email, a.phone, a.user_id AS application_user_id
-         FROM students s
-         LEFT JOIN applications a ON a.id = s.application_id
+    'SELECT s.*, COALESCE(s.first_name, p.first_name) AS first_name, COALESCE(s.last_name, p.last_name) AS last_name,
+        COALESCE(s.email, u.email) AS email, COALESCE(s.phone, p.phone) AS phone
+     FROM students s
+     LEFT JOIN users u ON u.id = s.user_id
+     LEFT JOIN user_profiles p ON p.user_id = u.id
          WHERE s.id = ?'
     );
     $stmt->execute([$studentId]);
@@ -199,14 +201,14 @@ function createStudentPortalAccount(int $studentId, bool $resetPassword = false)
         $email = strtolower($student['student_number']) . '@students.mssht.ac.zw';
     }
 
-    $firstName = $student['first_name'] ?? 'Student';
-    $lastName = $student['last_name'] ?? $student['student_number'];
+    $firstName = trim($student['first_name'] ?? '') ?: 'Student';
+    $lastName = trim($student['last_name'] ?? '') ?: $student['student_number'];
     $phone = $student['phone'] ?? null;
     $tempPassword = generateStudentTempPassword($student['student_number']);
     $hash = password_hash($tempPassword, PASSWORD_DEFAULT);
-    $isNew = empty($student['user_id']) && empty($student['application_user_id']);
+    $isNew = empty($student['user_id']);
 
-    $userId = (int) ($student['user_id'] ?: $student['application_user_id'] ?: 0);
+    $userId = (int) ($student['user_id'] ?: 0);
     if ($userId) {
         if ($resetPassword) {
             $db->prepare('UPDATE users SET password_hash = ?, must_change_password = 1, status = ? WHERE id = ?')
@@ -332,6 +334,7 @@ function studentPortalLogin(string $identifier, string $password): bool
     $identifier = trim($identifier);
     if ($identifier === '' || $password === '') {
         $_SESSION['login_error_detail'] = 'Please enter your Student ID (or email) and password.';
+        auditLog('student_login_failed', 'user', null);
         return false;
     }
 
@@ -351,6 +354,7 @@ function studentPortalLogin(string $identifier, string $password): bool
 
     if ($row && empty($row['user_id'])) {
         $_SESSION['login_error_detail'] = 'Your student record exists but no portal login has been set up yet. Please contact the registrar to activate your portal account.';
+        auditLog('student_login_failed', 'student', (int) $row['student_id']);
         return false;
     }
 
@@ -373,16 +377,19 @@ function studentPortalLogin(string $identifier, string $password): bool
 
     if (!$user) {
         $_SESSION['login_error_detail'] = 'No portal account found for that Student ID or email.';
+        auditLog('student_login_failed', 'user', null);
         return false;
     }
 
     if (!password_verify($password, $user['password_hash'])) {
         $_SESSION['login_error_detail'] = 'Incorrect password. If this is your first login, use the temporary password provided when your portal account was created.';
+        auditLog('student_login_failed', !empty($user['student_id']) ? 'student' : 'user', !empty($user['student_id']) ? (int) $user['student_id'] : null);
         return false;
     }
 
     if (!empty($user['student_id']) && !in_array($user['enrollment_status'], ['active', 'deferred'], true)) {
         $_SESSION['login_error_detail'] = 'Your enrollment is not active. Please contact the registrar.';
+        auditLog('student_login_failed', 'student', (int) $user['student_id']);
         return false;
     }
 

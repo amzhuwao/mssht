@@ -152,6 +152,7 @@ require __DIR__ . '/../../includes/finance-nav.php';
     <div class="card-body">
         <p><a href="<?= moduleUrl('finance', 'invoices') ?>" class="btn btn-primary btn-sm">Create invoice</a>
         <a href="<?= moduleUrl('finance', 'payment') ?>" class="btn btn-outline btn-sm">Record payment</a>
+        <a href="<?= moduleUrl('finance', 'receipts') ?>" class="btn btn-outline btn-sm">Receipts</a>
         <a href="<?= moduleUrl('finance', 'receivables') ?>" class="btn btn-outline btn-sm">Debtors &amp; aging</a>
         <a href="<?= moduleUrl('finance', 'reports') ?>" class="btn btn-outline btn-sm">Financial reports</a></p>
         <p class="text-muted" style="margin-top:1rem;font-size:.9rem;">Use the tabs above for fee structures, payables, ledger, procurement, sponsors, banking, and assets.</p>

@@ -125,11 +125,13 @@ function login(string $email, string $password): bool
     $user = $stmt->fetch();
 
     if (!$user || !password_verify($password, $user['password_hash'])) {
+        auditLog('login_failed', 'user', $user['id'] ?? null);
         return false;
     }
 
     // Students must use the dedicated student portal login
     if ($user['role'] === 'student') {
+        auditLog('login_failed', 'user', (int) $user['id']);
         return false;
     }
 

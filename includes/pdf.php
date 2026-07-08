@@ -73,9 +73,8 @@ function getStudentClassGradesForPdf(int $studentId, ?int $classId = null): arra
 {
     $db = getDB();
     $student = $db->prepare(
-        'SELECT s.student_number, CONCAT(COALESCE(a.first_name,up.first_name)," ",COALESCE(a.last_name,up.last_name)) AS name, p.name AS program
+        'SELECT s.student_number, CONCAT(COALESCE(s.first_name,up.first_name)," ",COALESCE(s.last_name,up.last_name)) AS name, p.name AS program
          FROM students s JOIN programs p ON p.id = s.program_id
-         LEFT JOIN applications a ON a.id = s.application_id
          LEFT JOIN users u ON u.id = s.user_id LEFT JOIN user_profiles up ON up.user_id = u.id
          WHERE s.id = ?'
     );

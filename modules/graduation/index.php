@@ -30,9 +30,8 @@ $graduations = $db->query(
      JOIN programs p ON p.id = g.program_id ORDER BY g.graduation_date DESC'
 )->fetchAll();
 $eligible = $db->query(
-    "SELECT s.id, s.student_number, COALESCE(a.first_name, up.first_name) AS first_name, COALESCE(a.last_name, up.last_name) AS last_name
+    "SELECT s.id, s.student_number, COALESCE(s.first_name, up.first_name) AS first_name, COALESCE(s.last_name, up.last_name) AS last_name
      FROM students s
-     LEFT JOIN applications a ON a.id = s.application_id
      LEFT JOIN users u ON u.id = s.user_id
      LEFT JOIN user_profiles up ON up.user_id = u.id
      WHERE s.enrollment_status = 'active'

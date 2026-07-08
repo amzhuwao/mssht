@@ -78,27 +78,48 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && verifyCsrf($_POST['csrf'] ?? '')) {
     try {
         $db->beginTransaction();
 
-        $db->prepare('UPDATE applications SET status = ?, notes = ?, reviewed_by = ?, reviewed_at = NOW() WHERE id = ?')
-           ->execute([$newStatus, $notesJson, $_SESSION['user_id'], $id]);
-
         if ($newStatus === 'approved') {
-            $existingStudent = $db->prepare('SELECT id, student_number FROM students WHERE application_id = ? LIMIT 1');
-            $existingStudent->execute([$id]);
+            $current = $db->prepare('SELECT * FROM applications WHERE id = ? FOR UPDATE');
+            $current->execute([$id]);
+            $application = $current->fetch(PDO::FETCH_ASSOC);
+            if (!$application) {
+                throw new RuntimeException('This application has already been processed.');
+            }
+
+            $existingStudent = $db->prepare('SELECT id, student_number FROM students WHERE application_ref = ? OR application_id = ? LIMIT 1');
+            $existingStudent->execute([$application['application_ref'], $id]);
             $duplicateStudent = $existingStudent->fetch(PDO::FETCH_ASSOC);
             if ($duplicateStudent) {
                 throw new RuntimeException('This application has already been converted to student record ' . $duplicateStudent['student_number'] . '.');
             }
 
             $studentNum = generateStudentNumber();
-            $studentSql = !empty($app['user_id'])
-                ? 'INSERT INTO students (student_number, user_id, application_id, program_id, intake_id, enrollment_date) VALUES (?, ?, ?, ?, ?, CURDATE())'
-                : 'INSERT INTO students (student_number, application_id, program_id, intake_id, enrollment_date) VALUES (?, ?, ?, ?, CURDATE())';
-            $studentParams = !empty($app['user_id'])
-                ? [$studentNum, (int) $app['user_id'], $id, $app['program_id'], $app['intake_id']]
-                : [$studentNum, $id, $app['program_id'], $app['intake_id']];
-            $db->prepare($studentSql)->execute($studentParams);
+            $db->prepare(
+                'INSERT INTO students (
+                    student_number, application_ref, first_name, last_name, email, phone, gender,
+                    date_of_birth, address, previous_qualification, notes, user_id, application_id,
+                    program_id, intake_id, enrollment_status, enrollment_date
+                 ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURDATE())'
+            )->execute([
+                $studentNum,
+                $application['application_ref'],
+                $application['first_name'],
+                $application['last_name'],
+                $application['email'],
+                $application['phone'],
+                $application['gender'],
+                $application['date_of_birth'],
+                $application['address'],
+                $application['previous_qualification'],
+                $application['notes'],
+                !empty($application['user_id']) ? (int) $application['user_id'] : null,
+                $id,
+                $application['program_id'],
+                $application['intake_id'],
+                'active',
+            ]);
             $studentId = (int) $db->lastInsertId();
-            if (empty($app['user_id'])) {
+            if (empty($application['user_id'])) {
                 $portal = createStudentPortalAccount($studentId);
                 $portalMsg = $portal
                     ? " Portal login — ID: {$portal['student_number']}, temp password: {$portal['temp_password']}"
@@ -107,13 +128,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && verifyCsrf($_POST['csrf'] ?? '')) {
             } else {
                 flash('success', "Application approved. Student ID: $studentNum. Existing portal account is now linked to the student record.");
             }
+
+            $db->prepare('DELETE FROM applications WHERE id = ?')->execute([$id]);
         } else {
+            $db->prepare('UPDATE applications SET status = ?, notes = ?, reviewed_by = ?, reviewed_at = NOW() WHERE id = ?')
+               ->execute([$newStatus, $notesJson, $_SESSION['user_id'], $id]);
             flash('success', 'Application updated.');
         }
 
         $db->commit();
         auditLog('application_' . $newStatus, 'application', $id);
-        redirect(moduleUrl('admissions', 'review') . '?id=' . $id);
+        redirect($newStatus === 'approved' ? moduleUrl('students', 'view') . '?id=' . $studentId : moduleUrl('admissions', 'review') . '?id=' . $id);
     } catch (Throwable $e) {
         if ($db->inTransaction()) {
             $db->rollBack();

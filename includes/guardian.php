@@ -54,10 +54,9 @@ function buildStudentSummary(int $studentId): array
     $db = getDB();
     $student = $db->prepare(
         'SELECT s.*, p.name AS program_name,
-                CONCAT(COALESCE(a.first_name, up.first_name), " ", COALESCE(a.last_name, up.last_name)) AS student_name
+            CONCAT(COALESCE(s.first_name, up.first_name), " ", COALESCE(s.last_name, up.last_name)) AS student_name
          FROM students s
          JOIN programs p ON p.id = s.program_id
-         LEFT JOIN applications a ON a.id = s.application_id
          LEFT JOIN users u ON u.id = s.user_id
          LEFT JOIN user_profiles up ON up.user_id = u.id
          WHERE s.id = ?'
@@ -156,12 +155,11 @@ function getGuardianStudents(int $guardianId): array
     $db = getDB();
     $stmt = $db->prepare(
         'SELECT s.id, s.student_number, sg.relationship,
-                CONCAT(COALESCE(a.first_name, up.first_name), " ", COALESCE(a.last_name, up.last_name)) AS name,
+            CONCAT(COALESCE(s.first_name, up.first_name), " ", COALESCE(s.last_name, up.last_name)) AS name,
                 p.name AS program_name
          FROM student_guardians sg
          JOIN students s ON s.id = sg.student_id
          JOIN programs p ON p.id = s.program_id
-         LEFT JOIN applications a ON a.id = s.application_id
          LEFT JOIN users u ON u.id = s.user_id
          LEFT JOIN user_profiles up ON up.user_id = u.id
          WHERE sg.guardian_id = ?'

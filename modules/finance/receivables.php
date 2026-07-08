@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__ . '/../../includes/bootstrap.php';
 requireModule('finance');
+requireFinanceManagement();
 
 $pageTitle = 'Accounts Receivable';
 $currentModule = 'finance';
@@ -14,13 +15,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && verifyCsrf($_POST['csrf'] ?? '')) {
         flash('success', "Applied {$n} automatic financial hold(s).");
     }
     if ($action === 'add_hold') {
-        $db->prepare('INSERT INTO finance_holds (student_id, hold_type, reason, created_by) VALUES (?, ?, ?, ?)')
-           ->execute([(int)$_POST['student_id'], $_POST['hold_type'], trim($_POST['reason']), $_SESSION['user_id']]);
+        addFinanceHold(
+            (int) $_POST['student_id'],
+            $_POST['hold_type'],
+            trim($_POST['reason']),
+            (int) ($_SESSION['user_id'] ?? 0) ?: null
+        );
         flash('success', 'Financial hold placed.');
     }
     if ($action === 'lift_hold') {
-        $db->prepare('UPDATE finance_holds SET is_active = 0, lifted_at = NOW(), lifted_by = ? WHERE id = ?')
-           ->execute([$_SESSION['user_id'], (int)$_POST['hold_id']]);
+        liftFinanceHold((int) $_POST['hold_id'], (int) ($_SESSION['user_id'] ?? 0) ?: null);
         flash('success', 'Hold lifted.');
     }
     if ($action === 'remind' && (int)$_POST['student_id']) {
@@ -30,6 +34,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && verifyCsrf($_POST['csrf'] ?? '')) {
     if ($action === 'confirm_payment' && (int)$_POST['payment_id']) {
         confirmPayment((int)$_POST['payment_id']);
         flash('success', 'Payment confirmed.');
+    }
+    if ($action === 'void_payment' && (int) $_POST['payment_id']) {
+        voidPayment((int) $_POST['payment_id']);
+        flash('success', 'Payment voided.');
     }
     redirect(moduleUrl('finance', 'receivables'));
 }
@@ -44,9 +52,8 @@ $pendingPops = $db->query(
      WHERE p.status = 'pending' ORDER BY p.paid_at DESC"
 )->fetchAll();
 $students = $db->query(
-    "SELECT s.id, s.student_number, COALESCE(a.first_name, up.first_name) AS first_name, COALESCE(a.last_name, up.last_name) AS last_name
+    "SELECT s.id, s.student_number, COALESCE(s.first_name, up.first_name) AS first_name, COALESCE(s.last_name, up.last_name) AS last_name
      FROM students s
-     LEFT JOIN applications a ON a.id = s.application_id
      LEFT JOIN users u ON u.id = s.user_id
      LEFT JOIN user_profiles up ON up.user_id = u.id
      WHERE s.enrollment_status = 'active'
@@ -72,7 +79,10 @@ require __DIR__ . '/../../includes/finance-nav.php';
     <td><?= e($p['student_number']) ?></td><td><?= e($p['invoice_number']) ?></td>
     <td><?= formatMoney((float)$p['amount'], $p['currency'] ?? 'USD') ?></td><td><?= e($p['reference'] ?? '—') ?></td>
     <td><?php if ($p['pop_file']): ?><a href="<?= e(UPLOAD_URL . '/' . $p['pop_file']) ?>" target="_blank">View</a><?php endif; ?></td>
-    <td><form method="post" style="display:inline;"><input type="hidden" name="csrf" value="<?= csrfToken() ?>"><input type="hidden" name="action" value="confirm_payment"><input type="hidden" name="payment_id" value="<?= (int)$p['id'] ?>"><button class="btn btn-sm btn-primary">Confirm</button></form></td>
+    <td>
+        <form method="post" style="display:inline;"><input type="hidden" name="csrf" value="<?= csrfToken() ?>"><input type="hidden" name="action" value="confirm_payment"><input type="hidden" name="payment_id" value="<?= (int)$p['id'] ?>"><button class="btn btn-sm btn-primary">Confirm</button></form>
+        <form method="post" style="display:inline;margin-left:6px;"><input type="hidden" name="csrf" value="<?= csrfToken() ?>"><input type="hidden" name="action" value="void_payment"><input type="hidden" name="payment_id" value="<?= (int)$p['id'] ?>"><button class="btn btn-sm btn-outline" data-confirm="Void this payment record?">Void</button></form>
+    </td>
 </tr>
 <?php endforeach; ?></tbody></table></div></div>
 <?php endif; ?>
@@ -110,7 +120,7 @@ require __DIR__ . '/../../includes/finance-nav.php';
 <div class="card-body table-wrap"><table class="data-table"><thead><tr><th>Student</th><th>Type</th><th>Reason</th><th>Auto</th><th></th></tr></thead><tbody>
 <?php foreach ($holds as $h): ?>
 <tr><td><?= e($h['student_number']) ?></td><td><?= e($h['hold_type']) ?></td><td><?= e($h['reason']) ?></td><td><?= $h['auto_generated'] ? 'Yes' : 'No' ?></td>
-<td><form method="post"><input type="hidden" name="csrf" value="<?= csrfToken() ?>"><input type="hidden" name="action" value="lift_hold"><input type="hidden" name="hold_id" value="<?= (int)$h['id'] ?>"><button class="btn btn-sm btn-outline">Lift</button></form></td></tr>
+<td><form method="post"><input type="hidden" name="csrf" value="<?= csrfToken() ?>"><input type="hidden" name="action" value="lift_hold"><input type="hidden" name="hold_id" value="<?= (int)$h['id'] ?>"><button class="btn btn-sm btn-outline" data-confirm="Lift this hold?">Lift</button></form></td></tr>
 <?php endforeach; ?>
 </tbody></table></div></div>
 

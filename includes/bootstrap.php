@@ -15,6 +15,7 @@ require_once __DIR__ . '/rubric.php';
 require_once __DIR__ . '/guardian.php';
 require_once __DIR__ . '/pdf.php';
 require_once __DIR__ . '/finance.php';
+require_once __DIR__ . '/reports.php';
 require_once __DIR__ . '/backup.php';
 
 // Redirect students who must change their temporary password

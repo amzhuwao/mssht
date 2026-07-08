@@ -1,11 +1,14 @@
 <?php
 require_once __DIR__ . '/../../includes/bootstrap.php';
 requireModule('finance');
+requireFinanceManagement();
 
 $pageTitle = 'Invoicing';
 $currentModule = 'finance';
 $financeSection = 'invoices';
 $db = getDB();
+$editInvoiceId = (int) ($_GET['edit'] ?? 0);
+$editInvoice = null;
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && verifyCsrf($_POST['csrf'] ?? '')) {
     $action = $_POST['action'] ?? '';
@@ -64,6 +67,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && verifyCsrf($_POST['csrf'] ?? '')) {
         ], $lines);
         flash('success', 'Invoice created.');
     }
+    if ($action === 'update' && (int) ($_POST['invoice_id'] ?? 0)) {
+        updateInvoice((int) $_POST['invoice_id'], [
+            'currency' => $_POST['currency'] ?? 'USD',
+            'invoice_type' => $_POST['invoice_type'] ?? 'invoice',
+            'fee_structure_id' => $_POST['fee_structure_id'] ?? null,
+            'sponsor_id' => $_POST['sponsor_id'] ?? null,
+            'due_date' => $_POST['due_date'] ?? '',
+            'notes' => trim($_POST['notes'] ?? ''),
+        ]);
+        flash('success', 'Invoice updated.');
+    }
+    if ($action === 'cancel' && (int) ($_POST['invoice_id'] ?? 0)) {
+        cancelInvoice((int) $_POST['invoice_id']);
+        flash('success', 'Invoice cancelled.');
+    }
     if ($action === 'bulk' && (int) $_POST['intake_id'] && (int) $_POST['fee_structure_id']) {
         $r = bulkInvoiceIntake((int) $_POST['intake_id'], (int) $_POST['fee_structure_id'], $_POST['due_date']);
         flash('success', "Bulk billing: {$r['created']} invoice(s) created.");
@@ -75,9 +93,8 @@ $invoices = $db->query(
     'SELECT i.*, s.student_number FROM invoices i JOIN students s ON s.id = i.student_id ORDER BY i.created_at DESC LIMIT 100'
 )->fetchAll();
 $students = $db->query(
-    "SELECT s.id, s.student_number, COALESCE(a.first_name, up.first_name) AS first_name, COALESCE(a.last_name, up.last_name) AS last_name
+    "SELECT s.id, s.student_number, COALESCE(s.first_name, up.first_name) AS first_name, COALESCE(s.last_name, up.last_name) AS last_name
      FROM students s
-     LEFT JOIN applications a ON a.id = s.application_id
      LEFT JOIN users u ON u.id = s.user_id
      LEFT JOIN user_profiles up ON up.user_id = u.id
      WHERE s.enrollment_status = 'active'
@@ -85,6 +102,12 @@ $students = $db->query(
 )->fetchAll();
 $intakes = $db->query('SELECT id, name FROM intakes ORDER BY start_date DESC')->fetchAll();
 $feeStructures = $db->query('SELECT fs.id, fs.description, p.name AS program_name, fs.amount FROM fee_structures fs JOIN programs p ON p.id = fs.program_id WHERE fs.is_active = 1')->fetchAll();
+
+if ($editInvoiceId) {
+    $stmt = $db->prepare('SELECT * FROM invoices WHERE id = ?');
+    $stmt->execute([$editInvoiceId]);
+    $editInvoice = $stmt->fetch();
+}
 
 require_once __DIR__ . '/../../includes/header.php';
 require __DIR__ . '/../../includes/finance-nav.php';
@@ -118,6 +141,25 @@ require __DIR__ . '/../../includes/finance-nav.php';
             </form>
         </div>
     </div>
+    <?php if ($editInvoice): ?>
+    <div class="card">
+        <div class="card-header"><h2>Edit invoice <?= e($editInvoice['invoice_number']) ?></h2></div>
+        <div class="card-body">
+            <form method="post">
+                <input type="hidden" name="csrf" value="<?= csrfToken() ?>">
+                <input type="hidden" name="action" value="update">
+                <input type="hidden" name="invoice_id" value="<?= (int) $editInvoice['id'] ?>">
+                <div class="form-group"><label>Currency</label><select name="currency"><option value="USD" <?= ($editInvoice['currency'] ?? 'USD') === 'USD' ? 'selected' : '' ?>>USD</option><option value="ZWL" <?= ($editInvoice['currency'] ?? 'USD') === 'ZWL' ? 'selected' : '' ?>>ZWL</option></select></div>
+                <div class="form-group"><label>Invoice type</label><select name="invoice_type"><option value="invoice" <?= ($editInvoice['invoice_type'] ?? 'invoice') === 'invoice' ? 'selected' : '' ?>>Invoice</option><option value="credit_note" <?= ($editInvoice['invoice_type'] ?? '') === 'credit_note' ? 'selected' : '' ?>>Credit note</option><option value="debit_note" <?= ($editInvoice['invoice_type'] ?? '') === 'debit_note' ? 'selected' : '' ?>>Debit note</option></select></div>
+                <div class="form-group"><label>Due date</label><input type="date" name="due_date" value="<?= e($editInvoice['due_date']) ?>" required></div>
+                <div class="form-group"><label>Fee structure</label><select name="fee_structure_id"><option value="">None</option><?php foreach ($feeStructures as $f): ?><option value="<?= (int) $f['id'] ?>" <?= (int) ($editInvoice['fee_structure_id'] ?? 0) === (int) $f['id'] ? 'selected' : '' ?>><?= e($f['program_name']) ?> — <?= e($f['description']) ?></option><?php endforeach; ?></select></div>
+                <div class="form-group"><label>Sponsor</label><select name="sponsor_id"><option value="">None</option><?php foreach ($db->query('SELECT id, name FROM finance_sponsors WHERE is_active = 1')->fetchAll() as $sp): ?><option value="<?= (int) $sp['id'] ?>" <?= (int) ($editInvoice['sponsor_id'] ?? 0) === (int) $sp['id'] ? 'selected' : '' ?>><?= e($sp['name']) ?></option><?php endforeach; ?></select></div>
+                <div class="form-group"><label>Notes</label><textarea name="notes" rows="4"><?= e($editInvoice['notes'] ?? '') ?></textarea></div>
+                <button type="submit" class="btn btn-primary">Save changes</button>
+            </form>
+        </div>
+    </div>
+    <?php endif; ?>
     <div class="card">
         <div class="card-header"><h2>Bulk billing (intake)</h2></div>
         <div class="card-body">
@@ -161,6 +203,13 @@ require __DIR__ . '/../../includes/finance-nav.php';
                 <td>
                     <a href="invoice.php?id=<?= (int) $inv['id'] ?>" class="btn btn-sm btn-outline">View</a>
                     <a href="payment.php?invoice_id=<?= (int) $inv['id'] ?>" class="btn btn-sm btn-primary">Pay</a>
+                    <a href="<?= moduleUrl('finance', 'invoices') ?>?edit=<?= (int) $inv['id'] ?>" class="btn btn-sm btn-outline">Edit</a>
+                    <form method="post" style="display:inline;">
+                        <input type="hidden" name="csrf" value="<?= csrfToken() ?>">
+                        <input type="hidden" name="action" value="cancel">
+                        <input type="hidden" name="invoice_id" value="<?= (int) $inv['id'] ?>">
+                        <button type="submit" class="btn btn-sm btn-danger" data-confirm="Cancel this invoice?">Cancel</button>
+                    </form>
                 </td>
             </tr>
             <?php endforeach; ?>

@@ -294,6 +294,7 @@ mssht/
 | `tools/install-migration-004.php` | App settings (mail UI) |
 | `tools/install-migration-005.php` | Finance ERP migration |
 | `tools/install-migration-009.php` | Unique student/application enrollment constraint |
+| `tools/install-migration-010.php` | Student profile fields for moved applications |
 | `tools/run-migration-002.php` | Classroom/LMS migration |
 | `tools/create-portal-for-student.php` | Create student portal account |
 | `tools/check-student-login.php` | Debug student login |
