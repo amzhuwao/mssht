@@ -23,7 +23,8 @@ android {
 dependencies {
 
     implementation(project(":core:model"))
-    implementation(libs.room.runtime)
+    // api: consumers that hold MsshtDatabase need RoomDatabase on the classpath
+    api(libs.room.runtime)
     implementation(libs.room.ktx)
     ksp(libs.room.compiler)
     implementation(libs.coroutines.android)
