@@ -17,7 +17,7 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier.Modifier
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -29,40 +29,66 @@ fun BrandMark(modifier: Modifier = Modifier, large: Boolean = false) {
         modifier = modifier.size(size).background(MsshtColors.Accent, RoundedCornerShape(10.dp)),
         contentAlignment = Alignment.Center,
     ) {
-        Text("M", color = MsshtColors.PrimaryDark, fontWeight = FontWeight.Bold, fontSize = if (large) 22.sp else 18.sp)
+        Text(
+            "M",
+            color = MsshtColors.PrimaryDark,
+            fontWeight = FontWeight.Bold,
+            fontSize = if (large) 22.sp else 18.sp,
+        )
     }
 }
 
 @Composable
-fun PrimaryButton(text: String, onClick: () -> Unit, modifier: Modifier = Modifier, enabled: Boolean = true) {
+fun PrimaryButton(
+    text: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+) {
     Button(
         onClick = onClick,
         enabled = enabled,
         modifier = modifier.fillMaxWidth().height(48.dp),
-        colors = ButtonDefaults.buttonColors(containerColor = MsshtColors.Primary, contentColor = MsshtColors.OnPrimary),
+        colors = ButtonDefaults.buttonColors(
+            containerColor = MsshtColors.Primary,
+            contentColor = MsshtColors.OnPrimary,
+        ),
         shape = RoundedCornerShape(10.dp),
-    ) { Text(text, fontWeight = FontWeight.SemiBold) }
+    ) {
+        Text(text, fontWeight = FontWeight.SemiBold)
+    }
 }
 
 @Composable
-fun OutlinePrimaryButton(text: String, onClick: () -> Unit, modifier: Modifier = Modifier) {
+fun OutlinePrimaryButton(
+    text: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
     OutlinedButton(
         onClick = onClick,
         modifier = modifier.fillMaxWidth().height(48.dp),
         shape = RoundedCornerShape(10.dp),
         colors = ButtonDefaults.outlinedButtonColors(contentColor = MsshtColors.Primary),
-    ) { Text(text, fontWeight = FontWeight.SemiBold) }
+    ) {
+        Text(text, fontWeight = FontWeight.SemiBold)
+    }
 }
 
 @Composable
-fun MsshtCard(modifier: Modifier = Modifier, content: @Composable () -> Unit) {
+fun MsshtCard(
+    modifier: Modifier = Modifier,
+    content: @Composable () -> Unit,
+) {
     Card(
         modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(10.dp),
         colors = CardDefaults.cardColors(containerColor = MsshtColors.Surface),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
     ) {
-        Column(modifier = Modifier.padding(16.dp)) { content() }
+        Column(modifier = Modifier.padding(16.dp)) {
+            content()
+        }
     }
 }
 
