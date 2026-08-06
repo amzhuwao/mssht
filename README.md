@@ -1,8 +1,31 @@
 # MSSHT — School Management System
 
-**Manica Skyview School of Hospitality and Tourism (MSSHT)** — a web-based school management platform for admissions, student records, virtual classrooms, finance, and guardian communication.
+**Manica Skyview School of Hospitality and Tourism (MSSHT)** is a web-based school management platform for admissions, student records, virtual classrooms, finance, reporting, and guardian communication.
 
-Built for **XAMPP** (Apache + MySQL + PHP) with a classic PHP architecture (no full-stack framework).
+Built for **XAMPP** (Apache + MySQL + PHP) with classic PHP (no full-stack framework).
+
+---
+
+## Architecture overview
+
+```
+Browser
+  ├── Public site          (index.php, admissions apply)
+  ├── Staff portal         (login.php → dashboard + modules/*)
+  ├── Student / applicant  (student-login.php → student dashboard)
+  └── Guardian portal      (guardian-portal.php, token link)
+
+Apache
+  └── PHP 8 + includes/bootstrap.php
+        ├── Auth & roles (staff / student / applicant)
+        ├── Feature modules (modules/*)
+        ├── Domain services (includes/finance, classroom, mailer, pdf, reports…)
+        └── MySQL (mssht_db) + uploads/ + backups/
+```
+
+**Request flow:** each staff page loads `includes/bootstrap.php`, checks session + module permission (`requireModule()`), then renders via shared header/footer. Student and applicant sessions use the same user table with `login_portal=student`. Guardians do not create accounts — they open a signed token URL.
+
+**Permissions:** seeded defaults live in `config/app.php` (`DEFAULT_ROLE_MODULES`). After migration 008 / current schema, live permissions are stored in the `roles` table and can be edited under **Settings → Roles**. Per-user allow/deny overrides use `user_module_permissions`.
 
 ---
 
@@ -10,37 +33,39 @@ Built for **XAMPP** (Apache + MySQL + PHP) with a classic PHP architecture (no f
 
 | Layer | Technology |
 |--------|------------|
-| Backend | PHP 8.0+ |
-| Database | MySQL / MariaDB |
-| Frontend | HTML5, CSS3, jQuery |
-| PDF export | [Dompdf](https://github.com/dompdf/dompdf) (Composer) |
-| Server | Apache (XAMPP) |
+| Backend | PHP 8.0+ (classic PHP, PDO) |
+| Database | MySQL 5.7+ / MariaDB 10.3+ (`utf8mb4`) |
+| Frontend | HTML5, CSS3, jQuery 3.7 (CDN) |
+| PDF | [Dompdf](https://github.com/dompdf/dompdf) via Composer |
+| Mail | Custom mailer (`mail()` or SMTP sockets) — settings in DB |
+| Server | Apache (XAMPP); `.htaccess` protects `config/`, `includes/`, `database/` |
+
+Optional: PhpSpreadsheet for XLSX student import (not required; CSV import works out of the box).
 
 ---
 
 ## Requirements
 
-- PHP 8.0 or higher (extensions: `pdo_mysql`, `mbstring`, `openssl`, `gd` recommended)
+- PHP 8.0+ with `pdo_mysql`, `mbstring`, `openssl` (`gd` recommended)
 - MySQL 5.7+ or MariaDB 10.3+
-- Apache with `mod_rewrite` optional
-- [Composer](https://getcomposer.org/) (for PDF generation)
-- XAMPP or equivalent LAMP/WAMP stack
+- Apache (XAMPP or equivalent LAMP/WAMP)
+- [Composer](https://getcomposer.org/) for Dompdf
 
 ---
 
-## Quick start (local / XAMPP)
+## Quick start (XAMPP)
 
-### 1. Clone or copy the project
-
-Place the project under your web root, for example:
+### 1. Place the project
 
 ```
 C:\xampp\htdocs\mssht
 ```
 
-### 2. Configure the database
+If you deploy under a different path, update `.htaccess` `RewriteBase` if you rely on rewrite rules.
 
-Edit `config/database.php` if needed (defaults match XAMPP):
+### 2. Database config
+
+`config/database.php` (XAMPP defaults):
 
 ```php
 define('DB_HOST', 'localhost');
@@ -49,43 +74,39 @@ define('DB_USER', 'root');
 define('DB_PASS', '');
 ```
 
-### 3. Set the application URL
+### 3. Application URL
 
-Edit `config/app.php` or set the `APP_URL` environment variable. Example:
+`APP_URL` is auto-detected from the request host and document root. Override with an environment variable or edit `config/app.php` when needed:
 
 ```
-define('APP_URL', 'http(s)://your-host/mssht');
+APP_URL=http://localhost/mssht
 ```
 
-Use your actual host/path if different.
-
-### 4. Install PHP dependencies
-
-From the project root:
+### 4. Composer
 
 ```bash
 composer install
 ```
 
-This installs Dompdf for invoice and grade PDF exports.
+### 5. Install the database
 
-### 5. Create the database
-
-**Option A — Web installer (recommended for first install)**
+**Web (recommended for first install)**
 
 1. Start Apache and MySQL in XAMPP.
-2. Open [install.php](install.php)
+2. Open `install.php`.
 3. Click **Install Database** (runs `database/schema.sql` and resets the admin password).
 
-**Option B — Command line**
+**CLI**
 
 ```bash
 php tools/install-cli.php
 ```
 
-### 6. Run migrations
+### 6. Apply feature migrations
 
-After the base schema is installed, apply incremental migrations in order:
+The base schema already includes student portal fields, applicant portal link, roles, user module permissions, unique application→student link, and denormalized student profile fields (migrations 001, 006–010 content).
+
+For a **fresh install**, still run classroom, guardians/rubrics, app settings, and finance:
 
 ```bash
 php tools/run-migration-002.php
@@ -94,88 +115,87 @@ php tools/install-migration-004.php
 php tools/install-migration-005.php
 ```
 
+When **upgrading an older database**, also run any missing later installers:
+
+```bash
+php tools/install-migration-009.php
+php tools/install-migration-010.php
+```
+
 | Migration | Purpose |
 |-----------|---------|
-| `001_student_portal.sql` | Included in base schema / student portal fields |
+| `001_student_portal.sql` | Student portal / must-change-password (in base schema) |
 | `002_classroom_lms.sql` | Virtual classes, assignments, stream, calendar |
 | `003_guardians_rubrics_mail.sql` | Guardians, rubrics, mail-related columns |
 | `004_app_settings.sql` | Database-backed mail/SMTP settings |
-| `005_finance_erp.sql` | Full finance ERP tables and extensions |
+| `005_finance_erp.sql` | Finance ERP tables |
+| `006_applicant_portal.sql` | Applicant ↔ user link (in base schema) |
+| `007_user_module_permissions.sql` | Per-user module allow/deny (in base schema) |
+| `008_roles.sql` | Roles table + seed (in base schema) |
+| `009_unique_student_application.sql` | Unique student↔application (in base schema) |
+| `010_student_profile_fields.sql` | Student profile fields on SIS records (in base schema) |
 
 ### 7. Log in
 
 | Portal | URL | Default credentials |
 |--------|-----|---------------------|
-| **Staff** | [login.php](login.php) | `admin@mssht.ac.zw` / `Admin@123` |
-| **Students** | [student-login.php](student-login.php) | Created on admission approval (see below) |
-| **Public site** | [index.php](index.php) | — |
+| **Staff** | `login.php` | `admin@mssht.ac.zw` / `Admin@123` |
+| **Students / applicants** | `student-login.php` | Created on apply / approval (see below) |
+| **Guardians** | `guardian-portal.php?token=…` | Token link from emailed summary (no password) |
+| **Public site** | `index.php` | — |
 
-**Change the admin password immediately** after first login.
-
----
-
-## Student portal accounts
-
-When an application is **approved**, a student record and portal user are created. The temporary password format is:
-
-```
-Mssht + last 4 digits of student number
-```
-
-Example: student number `MSSHT25001234` → temporary password `Mssht1234`
-
-Students must change this password on first login (`student-activate.php`).
-
-**Manual portal creation** (if a student has no login):
-
-```bash
-php tools/create-portal-for-student.php
-```
-
-**Diagnose login issues:**
-
-```bash
-php tools/check-student-login.php
-```
+**Change the admin password immediately** after first login. Set `APP_DEBUG` to `false` in production (`config/app.php`).
 
 ---
 
-## Configuration
+## Portals and accounts
 
-### Mail (password reset, guardian summaries, reminders)
+### Staff
 
-Configure via **System Settings → Email / SMTP** (super admin), or defaults in `config/mail.defaults.php`.
+Email + password. Students cannot use the staff login.
 
-Settings are stored in the `app_settings` table after migration 004.
+### Student portal
 
-For local development without SMTP, enable **fallback reset link on screen** in settings (or set `APP_DEBUG` to `true` in `config/app.php`).
-
-### Uploads
-
-Uploaded files are stored under `uploads/` (applications, assignments, proof-of-payment, etc.). The app creates subfolders on bootstrap. Ensure the web server can write to `uploads/`.
-
-### Database backup and restore
-
-Super admins can manage backups from **System Settings → Backup & Restore**. Backups are written as `.sql` files in `backups/`.
-
-CLI helpers are also available:
+Created when an application is approved, or manually:
 
 ```bash
-php tools/backup-database.php --name=manual-backup.sql
-php tools/restore-database.php backups/manual-backup.sql
-php tools/clear-seed-data.php
+php tools/create-portal-for-student.php STUDENT_NUMBER
 ```
 
-The restore command replaces the current application tables with the backup contents.
-The seed cleanup command removes the demo records so you can start capturing real data without reinstalling the schema.
+Login with **student number** or email. Temporary password:
 
-### Production checklist
+```
+Mssht + last 4 digits of the student number
+```
 
-- Set `APP_DEBUG` to `false` in `config/app.php`
-- Use strong passwords; remove or protect `install.php`
-- Configure HTTPS and update `APP_URL`
-- Set up real SMTP in System Settings
-- Restrict access to `tools/` scripts
+Example: `M20260065` → `Mssht0065`. Students must change this on first login (`student-activate.php`).
+
+### Applicant portal
+
+Submitting the public apply form creates a limited portal user (role `student`) linked to the application. Temporary password uses an `Appl…` prefix. After approval, the same person continues as a full student portal user.
+
+### Guardian portal
+
+No login account. Staff send progress summaries; guardians open a token URL to view a read-only summary (and downloadable grade PDF where enabled).
+
+---
+
+## Student numbers
+
+Official format:
+
+```
+M + YYYY + 4-digit sequence
+```
+
+Example: `M20260065`.
+
+Numbers are allocated sequentially per year (`generateStudentNumber()` in `includes/helpers.php`). Legacy `MSSHT…` IDs may still exist in older data; remap with:
+
+```bash
+php tools/fix-delvin-student-number.php          # dry run
+php tools/fix-delvin-student-number.php --apply
+```
 
 ---
 
@@ -183,66 +203,60 @@ The seed cleanup command removes the demo records so you can start capturing rea
 
 | Role | Typical access |
 |------|----------------|
-| Super Admin | Full system + settings + mail |
-| Registrar | Admissions, programs, students, classes, exams |
+| Super Admin | Full system, settings, mail, backup, users |
+| Registrar | Admissions, programs, intakes, students, classes, exams, reports |
 | Finance | Finance ERP, students (billing), reports |
-| Lecturer | Classes, LMS, attendance, exams |
+| Lecturer | Classes, LMS materials, attendance, exams, timetable |
 | Student | Portal: classes, fees, results, notifications |
-| HOD | Programs, students, classes, reports |
-| Librarian | Library module |
-| External Examiner | Exams module |
+| HOD | Programs, students, classes, timetable, exams, reports |
+| Librarian | Library |
+| External Examiner | Exams |
 
-Module visibility is defined in `config/app.php` → `ROLE_MODULES`.
+Defaults are seeded from `config/app.php`. Runtime source of truth is the `roles` table (**Settings → Roles**), with optional per-user overrides.
 
 ---
 
 ## Main features
 
-### Core SMS
+### Academic & SIS
 
-- Admissions (online apply, review, approve → student record)
-- Programs, modules, intakes
-- Student Information System (SIS)
-- User management and audit logging
-- Timetable, HR, library, placements, messages, graduation (foundation UI)
+- **Admissions** — public apply, document upload, review/approve → student record + portal
+- **Programs / modules / intakes** — academic structure and intake linking
+- **Students (SIS)** — register (with or without portal), edit/view, **filters** (search, program, intake, status, portal), **CSV download**, CSV import with preview
+- **Timetable**, **attendance**, **exams** (marks + student results)
+- **Reports** — enrollment / academic / admissions analytics and CSV/PDF export
+- **Graduation** — certificate records with QR verification codes
+- **Placements** — industrial attachment tracking
 
 ### Classroom / LMS
 
-- Virtual classes (join codes, members)
-- Stream (announcements, materials, comments)
-- Assignments and submissions
-- Rubric-based grading
-- Class calendar and in-app notifications
-- Grade PDF export
+- **Virtual classes** (`modules/classes`) — join codes, members, stream, assignments, rubric grading, calendar, grade PDF
+- **LMS materials** (`modules/lms`) — curriculum learning materials attached to program modules
 
-### Guardian & communication
+### Finance ERP (`modules/finance`)
 
-- Guardian profiles linked to students
-- Email progress summaries with token-based [guardian portal](guardian-portal.php)
-- Bulk summaries by intake
-
-### Finance ERP
-
-Submodules under **Finance** (see `mssht-desc3.txt`):
-
-- Fee structures (tuition, registration, per-semester / per-module / once-off)
-- Invoicing and bulk intake billing
-- Payments (cash, bank, EcoCash/mobile, POS) + proof-of-payment upload
+- Fee structures, invoicing, bulk intake billing
+- Payments (cash, bank, mobile money, POS) + proof-of-payment upload
 - Accounts receivable (aging, reminders, financial holds)
-- Accounts payable (suppliers, bills)
-- General ledger (chart of accounts, journals, trial balance)
-- Budgets, procurement, assets
-- Corporate/sponsor billing
-- Banking & reconciliation, USD/ZWL exchange rates
+- Accounts payable, general ledger, budgets, procurement, assets
+- Sponsor/corporate billing, banking & reconciliation, multi-currency rates
 - Financial reports and CSV export
 
-### Student finance portal
+Student finance portal: invoices, PDF download, proof upload, installment requests; results can be blocked by a **results** hold.
 
-- View invoices and balance
-- Download invoice PDF
-- Upload proof of payment
-- Request installment plans
-- Results may be blocked when a **results** financial hold is active
+### Communication
+
+- Internal **messages** and **notifications**
+- **Guardian** email summaries (single + bulk by intake) via `modules/guardians/` (requires students module access)
+- Password reset mail for staff and students
+
+### Administration
+
+- **Users** and role/module permissions
+- **HR** staff records
+- **Library** catalog and borrowings
+- **Settings** — SMTP/mail, roles, backup & restore
+- Audit logging foundation
 
 ---
 
@@ -250,22 +264,47 @@ Submodules under **Finance** (see `mssht-desc3.txt`):
 
 ```
 mssht/
-├── assets/              # CSS, JS, images
-├── config/              # app.php, database.php, mail defaults
+├── assets/                 # CSS, JS, import templates
+├── backups/                # SQL backups
+├── config/                 # app, database, mail defaults
 ├── database/
-│   ├── schema.sql       # Base install
-│   └── migrations/      # 002–005 incremental SQL
-├── includes/            # bootstrap, auth, finance, classroom, mail, PDF
-├── modules/             # Feature modules (admissions, finance, classes, …)
-├── tools/               # CLI installers, migrations, utilities
-├── uploads/             # User uploads (not in git by default)
-├── vendor/              # Composer (Dompdf)
-├── index.php            # Public landing page
-├── login.php            # Staff login
-├── student-login.php    # Student portal login
-├── install.php          # Web database installer
-└── guardian-portal.php  # Token-based guardian view
+│   ├── schema.sql          # Base install
+│   └── migrations/         # 001–010 incremental SQL
+├── includes/               # bootstrap, auth, finance, classroom, mail, PDF, reports
+├── modules/                # Feature modules (see below)
+├── tools/                  # CLI installers, migrations, utilities
+├── uploads/                # User uploads (gitignored content)
+├── vendor/                 # Composer (Dompdf)
+├── index.php               # Public landing
+├── login.php               # Staff login
+├── student-login.php       # Student / applicant portal
+├── guardian-portal.php     # Token guardian view
+├── dashboard.php           # Role-based dashboard
+└── install.php             # Web database installer
 ```
+
+### Modules
+
+| Folder | Purpose |
+|--------|---------|
+| `admissions` | Applications and approval workflow |
+| `programs` / `intakes` | Academic programmes and intake periods |
+| `students` | SIS, filters, CSV export/import, portal create |
+| `classes` | Virtual classroom / LMS |
+| `lms` | Program-module learning materials |
+| `attendance` | Class attendance |
+| `exams` | Assessments, marks, student results |
+| `finance` | Finance ERP hub and submodules |
+| `reports` | Analytics and exports |
+| `guardians` | Progress summary emails (bulk + single) |
+| `timetable` | Weekly timetable |
+| `hr` | Staff records |
+| `library` | Books and borrowings |
+| `placements` | Industrial placements |
+| `graduation` | Certificates |
+| `messages` / `notifications` | Inbox and alerts |
+| `users` | Staff user management |
+| `settings` | Mail, roles, backup |
 
 ---
 
@@ -276,12 +315,39 @@ mssht/
 | `/` | Public website |
 | `/login.php` | Staff login |
 | `/forgot-password.php` | Staff password reset |
-| `/student-login.php` | Student portal |
+| `/student-login.php` | Student / applicant portal |
 | `/student-forgot-password.php` | Student password reset |
 | `/dashboard.php` | Role-based dashboard |
-| `/modules/finance/` | Finance ERP hub |
+| `/modules/students/` | SIS (filters + CSV download) |
+| `/modules/finance/` | Finance ERP |
 | `/modules/classes/` | Virtual classes |
+| `/modules/reports/` | Reporting & analytics |
 | `/modules/guardians/bulk-send.php` | Bulk guardian emails by intake |
+| `/modules/settings/` | System settings |
+
+---
+
+## Configuration notes
+
+**Mail** — configure under **Settings → Email / SMTP**, or defaults in `config/mail.defaults.php`. Stored in `app_settings` after migration 004. For local work without SMTP, enable on-screen reset-link fallback (or `APP_DEBUG`).
+
+**Uploads** — under `uploads/` (applications, assignments, avatars, classroom, etc.). Web server must be able to write here.
+
+**Backups** — **Settings → Backup & Restore**, or:
+
+```bash
+php tools/backup-database.php --name=manual-backup.sql
+php tools/restore-database.php backups/manual-backup.sql
+php tools/clear-seed-data.php
+```
+
+### Production checklist
+
+- Set `APP_DEBUG` to `false`
+- Change default admin password; protect or remove `install.php`
+- HTTPS + correct `APP_URL`
+- Real SMTP settings
+- Restrict web access to `tools/`
 
 ---
 
@@ -289,35 +355,37 @@ mssht/
 
 | Script | Purpose |
 |--------|---------|
-| `tools/install-cli.php` | Install base schema from command line |
-| `tools/install-migration-003.php` | Guardians & rubrics migration |
+| `tools/install-cli.php` | Install base schema |
+| `tools/run-migration-002.php` | Classroom / LMS tables |
+| `tools/install-migration-003.php` | Guardians & rubrics |
 | `tools/install-migration-004.php` | App settings (mail UI) |
-| `tools/install-migration-005.php` | Finance ERP migration |
-| `tools/install-migration-009.php` | Unique student/application enrollment constraint |
-| `tools/install-migration-010.php` | Student profile fields for moved applications |
-| `tools/run-migration-002.php` | Classroom/LMS migration |
+| `tools/install-migration-005.php` | Finance ERP |
+| `tools/install-migration-009.php` | Unique application↔student (upgrades) |
+| `tools/install-migration-010.php` | Student profile fields (upgrades) |
+| `tools/backup-database.php` | Create SQL backup |
+| `tools/restore-database.php` | Restore from SQL backup |
+| `tools/clear-seed-data.php` | Remove demo/seed records |
 | `tools/create-portal-for-student.php` | Create student portal account |
-| `tools/check-student-login.php` | Debug student login |
-| `tools/fix-html.php` | Fix accidental invalid HTML tag typos in templates |
+| `tools/check-student-login.php` | Diagnose student login |
+| `tools/fix-delvin-student-number.php` | Remap legacy `MSSHT*` IDs to `MYYYYNNNN` |
+| `tools/migrate_program_intakes.php` | Program↔intake pivot helpers |
+| `tools/migrate_programs_modules_pivot.php` | Program↔module pivot helpers |
 
 ---
 
 ## Troubleshooting
 
-**Blank page or 500 error**  
-Enable errors temporarily via `APP_DEBUG` in `config/app.php`. Check Apache `error.log` and PHP version ≥ 8.0.
+**Blank page or 500** — set `APP_DEBUG` true temporarily; check Apache/PHP logs; confirm PHP ≥ 8.0.
 
-**Database connection failed**  
-Confirm MySQL is running and credentials in `config/database.php` match your environment.
+**Database connection failed** — MySQL running? Credentials in `config/database.php` correct?
 
-**PDF download shows HTML instead of PDF**  
-Run `composer install` in the project root so Dompdf is available under `vendor/`.
+**PDF is HTML** — run `composer install` so Dompdf exists under `vendor/`.
 
-**Emails not sending**  
-Configure SMTP under **System Settings**, or use the on-screen fallback link for password reset in development.
+**Emails not sending** — configure SMTP in Settings, or use fallback reset links in development.
 
-**Student cannot log in**  
-Ensure the student has a `user_id` (approve application or run `tools/create-portal-for-student.php`).
+**Student cannot log in** — ensure `user_id` is set (approve application or `create-portal-for-student.php`). Confirm they use the official student number format and temp password `Mssht` + last four digits.
+
+**Wrong student number format** — new numbers are `MYYYYNNNN`. Remap leftovers with `tools/fix-delvin-student-number.php --apply`.
 
 ---
 
@@ -329,6 +397,6 @@ Proprietary — Manica Skyview School of Hospitality and Tourism. All rights res
 
 ## Version
 
-Application version: **1.0.0** (`config/app.php`)
+Application version: **1.0.0** (`config/app.php`).
 
-For detailed finance specifications, see `mssht-desc3.txt` in the repository root.
+Finance ERP detail specs: `mssht-desc3.txt`. Older `mssht-desc*.txt` notes may describe planned integrations that are not implemented — treat this README as the live system reference.
