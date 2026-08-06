@@ -96,15 +96,7 @@ function parseStudentImportFile($tmpPath, $originalName)
 
 function generateUniqueStudentNumberForRegistration(PDO $db): string
 {
-    for ($i = 0; $i < 10; $i++) {
-        $candidate = generateStudentNumber();
-        $check = $db->prepare('SELECT id FROM students WHERE student_number = ?');
-        $check->execute([$candidate]);
-        if (!$check->fetch()) {
-            return $candidate;
-        }
-    }
-    return generateStudentNumber();
+    return generateStudentNumber($db);
 }
 
 function getIntakesForProgram(PDO $db, int $programId): array

@@ -93,7 +93,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && verifyCsrf($_POST['csrf'] ?? '')) {
                 throw new RuntimeException('This application has already been converted to student record ' . $duplicateStudent['student_number'] . '.');
             }
 
-            $studentNum = generateStudentNumber();
+            $studentNum = generateStudentNumber($db);
             $db->prepare(
                 'INSERT INTO students (
                     student_number, application_ref, first_name, last_name, email, phone, gender,

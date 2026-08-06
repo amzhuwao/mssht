@@ -62,9 +62,67 @@ function generateRef(string $prefix = 'APP'): string
     return $prefix . '-' . date('Y') . '-' . strtoupper(substr(uniqid(), -6));
 }
 
-function generateStudentNumber(): string
+/**
+ * Official student number format: M + YYYY + 4-digit sequence (e.g. M20260065).
+ * When $db is provided, allocates the next unused sequential number for the year.
+ */
+function generateStudentNumber(?PDO $db = null, ?int $year = null): string
 {
-    return 'MSSHT' . date('y') . str_pad((string) random_int(1, 99999), 5, '0', STR_PAD_LEFT);
+    $year = $year ?: (int) date('Y');
+    if ($db instanceof PDO) {
+        return allocateNextOfficialStudentNumber($db, $year, true);
+    }
+
+    return 'M' . $year . str_pad((string) random_int(1, 9999), 4, '0', STR_PAD_LEFT);
+}
+
+function peekNextOfficialStudentNumber(PDO $db, ?int $year = null): string
+{
+    return allocateNextOfficialStudentNumber($db, $year, false);
+}
+
+function allocateNextOfficialStudentNumber(PDO $db, ?int $year = null, bool $persist = true): string
+{
+    $year = $year ?: (int) date('Y');
+    $prefix = 'M' . $year;
+    $seq = 0;
+
+    $stmt = $db->query(
+        "SELECT student_number FROM students
+         WHERE student_number REGEXP '^" . $prefix . "[0-9]{4}$'
+         ORDER BY student_number DESC
+         LIMIT 1"
+    );
+    $last = $stmt ? $stmt->fetchColumn() : false;
+    if ($last && preg_match('/^M(\d{4})(\d{4})$/', (string) $last, $m)) {
+        $seq = (int) $m[2];
+    }
+
+    if (function_exists('getAppSetting')) {
+        $stored = getAppSetting('student_number.last_seq.' . $year);
+        if ($stored !== null && $stored !== '' && (int) $stored > $seq) {
+            $seq = (int) $stored;
+        }
+    }
+
+    for ($attempt = 0; $attempt < 1000; $attempt++) {
+        $seq++;
+        $candidate = $prefix . str_pad((string) $seq, 4, '0', STR_PAD_LEFT);
+        $check = $db->prepare('SELECT id FROM students WHERE student_number = ?');
+        $check->execute([$candidate]);
+        if (!$check->fetch()) {
+            if ($persist && function_exists('setAppSetting')) {
+                try {
+                    setAppSetting('student_number.last_seq.' . $year, (string) $seq);
+                } catch (Throwable $e) {
+                    // app_settings may be unavailable during early install
+                }
+            }
+            return $candidate;
+        }
+    }
+
+    throw new RuntimeException('Could not allocate a unique student number.');
 }
 
 function formatDate(?string $date, string $format = 'd M Y'): string
