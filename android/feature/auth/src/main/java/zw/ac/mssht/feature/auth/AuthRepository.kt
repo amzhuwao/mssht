@@ -20,12 +20,14 @@ class AuthRepository(
                 portal = portal,
             ),
         )
-        if (!res.ok || res.token.isNullOrBlank() || res.user == null) {
+        val token = res.token
+        val user = res.user
+        if (!res.ok || token.isNullOrBlank() || user == null) {
             Result.Error(res.error ?: "Login failed")
         } else {
-            session.saveSession(res.token, res.user)
+            session.saveSession(token, user)
             session.setBiometricEnabled(true)
-            Result.Success(res.user)
+            Result.Success(user)
         }
     } catch (t: Throwable) {
         Result.Error(t.message ?: "Unable to reach MSSHT server", t)
