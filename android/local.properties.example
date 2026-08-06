@@ -1,0 +1,4 @@
+## Copy to local.properties (do not commit secrets)
+sdk.dir=/Users/YOU/Library/Android/sdk
+# Optional override used by developers
+# mssht.api.baseUrl=http://192.168.1.10/mssht/
