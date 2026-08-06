@@ -55,6 +55,20 @@ Migration: `database/migrations/011_mobile_tokens.sql` (also auto-created on fir
 5. Uncomment `alias(libs.plugins.google.services)` in `app/build.gradle.kts`.
 6. Run the `app` configuration.
 
+## Admin website download
+
+Super administrators can download the debug APK from **System Settings → Mobile App**.
+
+1. Build: `cd android && ./gradlew assembleDebug`
+2. Copy the APK to the web app:
+   ```bash
+   mkdir -p storage/mobile
+   cp android/app/build/outputs/apk/debug/app-debug.apk storage/mobile/mssht-android-debug.apk
+   ```
+3. Open **System Settings** (super_admin only) and use **Download Android APK**.
+
+The download is gated by `modules/settings/download-apk.php` (`requireModule('settings')` + `requireRole(['super_admin'])`). Direct access to `/storage/` is blocked in `.htaccess`.
+
 ## Security notes
 
 - Access tokens are stored in **EncryptedSharedPreferences**.
