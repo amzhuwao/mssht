@@ -17,7 +17,7 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
+import androidx.compose.ui.Modifier.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -62,12 +62,14 @@ fun MsshtCard(modifier: Modifier = Modifier, content: @Composable () -> Unit) {
         colors = CardDefaults.cardColors(containerColor = MsshtColors.Surface),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
     ) {
-        Column(Modifier = Modifier.padding(16.dp)) { content() }
+        Column(modifier = Modifier.padding(16.dp)) { content() }
     }
 }
 
 @Composable
 fun SectionTitle(text: String) {
-    Text(text, style = MsshtTypography.titleMedium, color = MsshtColors.PrimaryDark)
-    Spacer(Modifier = Modifier.height(8.dp))
+    Column {
+        Text(text, style = MsshtTypography.titleMedium, color = MsshtColors.PrimaryDark)
+        Spacer(modifier = Modifier.height(8.dp))
+    }
 }
