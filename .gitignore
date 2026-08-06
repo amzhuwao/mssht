@@ -1,0 +1,5 @@
+# Built Android packages (served via admin download, not committed)
+/storage/mobile/*.apk
+/artifacts/
+*.apk
+!android/

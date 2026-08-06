@@ -368,6 +368,7 @@ php tools/clear-seed-data.php
 | `tools/create-portal-for-student.php` | Create student portal account |
 | `tools/check-student-login.php` | Diagnose student login |
 | `tools/fix-delvin-student-number.php` | Remap legacy `MSSHT*` IDs to `MYYYYNNNN` |
+| `tools/install-migration-011.php` | Mobile API bearer tokens table |
 | `tools/migrate_program_intakes.php` | Program↔intake pivot helpers |
 | `tools/migrate_programs_modules_pivot.php` | Program↔module pivot helpers |
 
@@ -392,6 +393,19 @@ php tools/clear-seed-data.php
 ## License
 
 Proprietary — Manica Skyview School of Hospitality and Tourism. All rights reserved unless otherwise agreed.
+
+---
+
+## Native Android app
+
+A modular Kotlin / Jetpack Compose client lives in [`android/`](android/):
+
+- Biometric unlock (fingerprint / face / device credential)
+- Offline Room cache + WorkManager sync
+- FCM push notifications
+- UI tokens aligned with web CSS (`#0D4F4C` primary, `#C9A227` accent, DM Sans / Playfair Display)
+
+Mobile JSON API: [`api/mobile/v1/`](api/mobile/v1/). See [`android/README.md`](android/README.md) for Android Studio setup.
 
 ---
 

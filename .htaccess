@@ -4,7 +4,7 @@
     RewriteBase /mssht/
 
     # Protect sensitive directories
-    RewriteRule ^(config|includes|database)/ - [F,L]
+    RewriteRule ^(config|includes|database|storage|artifacts)/ - [F,L]
 </IfModule>
 
 # Disable directory listing

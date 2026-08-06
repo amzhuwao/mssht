@@ -7,6 +7,9 @@ $pageTitle = 'System Settings';
 $currentModule = 'settings';
 $mail = getMailConfig();
 $testResult = null;
+$apkPath = APP_ROOT . '/storage/mobile/mssht-android-debug.apk';
+$apkAvailable = is_file($apkPath) && is_readable($apkPath);
+$apkSizeLabel = $apkAvailable ? number_format(filesize($apkPath) / (1024 * 1024), 1) . ' MB' : null;
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && verifyCsrf($_POST['csrf'] ?? '')) {
     $action = $_POST['action'] ?? '';
@@ -156,6 +159,31 @@ require_once __DIR__ . '/../../includes/header.php';
     <div class="card-body">
         <p class="text-muted">Create SQL backups and restore them from the admin panel.</p>
         <a href="<?= moduleUrl('settings', 'backup') ?>" class="btn btn-primary">Open Backup Tools</a>
+    </div>
+</div>
+
+<div class="card" style="margin-top:1.5rem;">
+    <div class="card-header"><h2>Mobile App</h2></div>
+    <div class="card-body">
+        <p class="text-muted">
+            Download the MSSHT Android companion app (debug build) for staff devices.
+            Only super administrators can access this download.
+        </p>
+        <?php if ($apkAvailable): ?>
+            <p style="margin:.75rem 0;">
+                <strong>Package:</strong> mssht-android-debug.apk
+                <?php if ($apkSizeLabel): ?>
+                    <span class="text-muted">(<?= e($apkSizeLabel) ?>)</span>
+                <?php endif; ?>
+            </p>
+            <a href="<?= moduleUrl('settings', 'download-apk') ?>" class="btn btn-primary">Download Android APK</a>
+        <?php else: ?>
+            <div class="alert alert-warning" style="margin-top:.75rem;">
+                APK file is not installed on this server yet. Place
+                <code>mssht-android-debug.apk</code> in <code>storage/mobile/</code>,
+                then refresh this page.
+            </div>
+        <?php endif; ?>
     </div>
 </div>
 
