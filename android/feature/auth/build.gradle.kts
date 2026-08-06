@@ -33,7 +33,7 @@ dependencies {
     implementation(libs.androidx.compose.material3)
     implementation(libs.androidx.compose.material.icons)
     implementation(libs.androidx.lifecycle.viewmodel)
-    implementation(libs.androidx.biometric)
+    implementation(libs.biometric)
     implementation("androidx.fragment:fragment-ktx:1.8.5")
     implementation(libs.coroutines.android)
 
